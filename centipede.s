@@ -33,6 +33,7 @@
     displayAddress:	 .word 0x10008000
     screenHeight: .word 21          # Screen height in "unit"s
     screenWeight: .word 21          # Screen width in "unit"s
+    unitWidth: .word 12             # Width of "unit"
     screenLinePixels: .word 256     # Number of pixels in a line of screen
 
     # Colors
@@ -42,6 +43,8 @@
     # Objects
     centipedeLocations: .word 0, 1, 2, 3, 4, 5, 6, 7, 8, 9
     centipedeLength: .word 10
+
+    sampleString: .asciiz "a"
 
 .globl main
 .text
@@ -64,11 +67,10 @@ main:
 
 game_loop_main:
     # Do something
-    la			$a0, centipedeLocations			# 
+    la			$a1, centipedeLocations			# 
     lw			$a2, centipedeLength			# 
-    
     jal			draw_centipede				# jump to draw_centipede and save position to $ra
-
+    
     jal			sleep				# jump to sleep and save position to $ra
     
     j			game_loop_main				# jump to game_loop_main
@@ -88,7 +90,7 @@ program_exit:
 
 # FUN draw_centipede
 # ARGS:
-# $a0: Address of locations of centipede segments
+# $a1: Address of locations of centipede segments
 # $a2: Length of centipede array
 draw_centipede:
     addi		$sp, $sp, -20			# $sp -= 20
@@ -96,19 +98,17 @@ draw_centipede:
     sw			$s1, 12($sp)
     sw			$s2, 8($sp)
     sw			$s3, 4($sp)
-    sw			$ra, 0($sp)
-
-    # Use $t0 to hold the location array
-    move 		$t0, $a0			        # $t0 = $a0
+    sw			$ra, 0($sp)		
 
     draw_centipede_loop:
-        lw			$a0, 0($t0)			    # Load current segment to draw
+        lw			$a0, 0($a1)			                # Load current segment to draw
 
-        jal			draw_centipede_segment	# jump to draw_centipede_segment and save position to $ra
+        jal			draw_centipede_segment	            # jump to draw_centipede_segment and save position to $ra
         
-        addi		$t0, $t0, 4			    # Increment index to next element
-        addi		$a3, $a3, -1			# Decrement loop counter
-
+        addi 		$a1, $a1, 4			                # Increment index to next element
+        addi		$a2, $a2, -1			            # Decrement loop counter
+        bgt			$a2, $zero, draw_centipede_loop	    # if $a2 > $zero then draw_centipede_loop
+        
     lw			$s0, 16($sp)
     lw			$s1, 12($sp)
     lw			$s2, 8($sp)
@@ -137,7 +137,9 @@ draw_centipede_segment:
     lw			$t1, screenLinePixels	# $t1 = screenLinePixels
     
     # Calculate actual display address
-    sll			$t2, $t2, 2			    # $t2 = $t2 * 4, calculate offset
+    lw			$t3, unitWidth			#
+    mult	    $t2, $t3			    # $t2 * 12 = Hi and Lo registers
+    mflo	    $t2					    # copy Lo to $t2
     add			$t2, $t2, $s7		    # $t2 = $t2 + $s7 (display address)
     
     # Draw a segment of centipede (3x3 block)
