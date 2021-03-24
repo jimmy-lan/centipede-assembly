@@ -84,6 +84,41 @@ program_exit:
 # # Graphics
 ##############################################
 
+# FUN draw_centipede
+# ARGS:
+# $a0: Address of locations of centipede segments
+# $a2: Length of centipede array
+draw_centipede:
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    # Use $t0 to hold the location array
+    move 		$t0, $a0			        # $t0 = $a0
+
+    draw_centipede_loop:
+        lw			$a0, 0($t0)			    # Load current segment to draw
+
+        jal			draw_centipede_segment	# jump to draw_centipede_segment and save position to $ra
+        
+        addi		$t0, $t0, 4			    # Increment index to next element
+        addi		$a3, $a3, -1			# Decrement loop counter
+
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+
+    move 		$v0, $zero			# $v0 = $zero
+    jr			$ra					# jump to $ra
+
+# END FUN draw_centipede
+
 # FUN draw_centipede_segment
 # ARGS:
 # $a0: Location of centipede. Should be a number from 0 to screenWidth.
