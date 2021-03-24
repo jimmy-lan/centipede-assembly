@@ -44,6 +44,7 @@
     # Objects
     centipedeLocations: .word 0, 1, 2, 3, 4, 5, 6, 7, 8, 9
     centipedeLength: .word 10
+    blasterLocation: .word 1060
 
     sampleString: .asciiz "a"
 
@@ -68,9 +69,11 @@ main:
 
 game_loop_main:
     # Do something
-    la			$a1, centipedeLocations			# 
-    lw			$a2, centipedeLength			# 
-    jal			draw_centipede				# jump to draw_centipede and save position to $ra
+    # la			$a1, centipedeLocations			# 
+    # lw			$a2, centipedeLength			# 
+    # jal			draw_centipede				# jump to draw_centipede and save position to $ra
+    lw			$a0, blasterLocation			# 
+    jal			draw_blaster				# jump to draw_blaster and save position to $ra
     
     jal			sleep				# jump to sleep and save position to $ra
     
@@ -203,13 +206,13 @@ draw_blaster:
     sw			$t9, 8($t2)
 
     # Second line
-    addi		$t2, $t2, $t1			# $t2 = $t2 + $t1, goes to the next line at this location
+    add 		$t2, $t2, $t1			# $t2 = $t2 + $t1, goes to the next line at this location
     sw			$t0, 0($t2)
     sw			$t0, 4($t2)
     sw			$t0, 8($t2)
 
     # Third line
-    addi		$t2, $t2, $t1			# $t2 = $t2 + $t1, goes to the next line at this location
+    add 		$t2, $t2, $t1			# $t2 = $t2 + $t1, goes to the next line at this location
     sw			$t0, 0($t2)
     sw			$t9, 4($t2)
     sw			$t0, 8($t2)
