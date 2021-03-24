@@ -31,9 +31,9 @@
 .data
     # Display
     displayAddress:	 .word 0x10008000
-    screenHeight: .word 21
-    screenWeight: .word 21
-    unitWidth: .word 12
+    screenHeight: .word 21          # Screen height in "unit"s
+    screenWeight: .word 21          # Screen width in "unit"s
+    screenLinePixels: .word 256     # Number of pixels in a line of screen
 
     # Colors
     backgroundColor: .word 0x00000000
@@ -49,10 +49,12 @@
 ##############################################
 # # Initialization
 ##############################################
+# # Saved register allocations:
+# # $s7: display address
+##############################################
 
 main:
-    lw			$t0, displayAddress     #
-    lw			$s7, unitWidth			# 
+    lw			$s7, displayAddress			# 
     
 
 ##############################################
@@ -61,10 +63,9 @@ main:
 
 game_loop_main:
     # Do something
-    lw			$t2, centipedeColor				# $t2 = centipedeColor
-    sw			$t2, 0($t0)			# 
-
-    add 		$t0, $t0, $s7			# $t0 = $t0 + $t9
+    addi		$a0, $zero, 0			# $a0 = $zero + 0
+    
+    jal			draw_centipede_segment				# jump to draw_centipede_segment and save position to $ra
 
     jal			sleep				# jump to sleep and save position to $ra
     
@@ -78,6 +79,60 @@ program_exit:
 	syscall
 
 ############################################################################################
+
+##############################################
+# # Graphics
+##############################################
+
+# FUN draw_centipede_segment
+# ARGS:
+# $a0: Location of centipede. Should be a number from 0 to screenWidth.
+draw_centipede_segment:
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    lw			$t2, 0($a0)			    # Load location to draw centipede to $t2
+    li			$t0, centipedeColor		# $t0 = centipedeColor
+    li			$t1, linePixelWidth		# $t1 = linePixelWidth
+    
+    # Calculate actual display address
+    sll			$t2, $t2, 2			    # $t2 = $t2 * 4, calculate offset
+    add			$t2, $t2, $s7		    # $t2 = $t2 + $s7 (display address)
+    
+    # Draw a segment of centipede (3x3 block)
+    # First line
+    sw			$t0, 0($t2)
+    sw			$t0, 4($t2)
+    sw			$t0, 8($t2)
+    
+    # Second line
+    add		    $t2, $t2, $t1			# $t2 = $t2 + $t1, goes to the next line at this location
+    sw			$t0, 0($t2)
+    sw			$t0, 4($t2)
+    sw			$t0, 8($t2)
+
+    # Third line
+    add		    $t2, $t2, $t1			# $t2 = $t2 + $t1, goes to the next line at this location
+    sw			$t0, 0($t2)
+    sw			$t0, 4($t2)
+    sw			$t0, 8($t2)
+
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+
+    move 		$v0, $zero			    # $v0 = $zero
+    jr			$ra					    # jump to $ra
+
+# END FUN draw_centipede_segment
+
 
 ##############################################
 # # Utilities
