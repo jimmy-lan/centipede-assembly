@@ -95,9 +95,9 @@ draw_centipede_segment:
     sw			$s3, 4($sp)
     sw			$ra, 0($sp)
 
-    lw			$t2, 0($a0)			    # Load location to draw centipede to $t2
-    li			$t0, centipedeColor		# $t0 = centipedeColor
-    li			$t1, linePixelWidth		# $t1 = linePixelWidth
+    addi		$t2, $a0, 0			    # Load location to draw centipede to $t2
+    lw			$t0, centipedeColor		# $t0 = centipedeColor
+    lw			$t1, screenLinePixels	# $t1 = screenLinePixels
     
     # Calculate actual display address
     sll			$t2, $t2, 2			    # $t2 = $t2 * 4, calculate offset
