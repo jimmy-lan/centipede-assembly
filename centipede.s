@@ -29,17 +29,42 @@
 #####################################################################
 
 .data
+    # Display
     displayAddress:	 .word 0x10008000
-    backgroundColor: .word 0x00000000
-
     screenHeight: .word 21
     screenWeight: .word 21
+    unitWidth: .word 12
+
+    # Colors
+    backgroundColor: .word 0x00000000
+    centipedeColor: .word 0x00ff0000
+
+    # Objects
+    centipedeLocations: .word 0, 1, 2, 3, 4, 5, 6, 7, 8, 9
 
 .globl main
 .text
 
+
+##############################################
+# # Initialization
+##############################################
+
+main:
+    lw			$t0, displayAddress     #
+    lw			$s7, unitWidth			# 
+    
+
+##############################################
+# # Game Loop
+##############################################
+
 game_loop_main:
     # Do something
+    lw			$t2, centipedeColor				# $t2 = centipedeColor
+    sw			$t2, 0($t0)			# 
+
+    add 		$t0, $t0, $s7			# $t0 = $t0 + $t9
 
     jal			sleep				# jump to sleep and save position to $ra
     
