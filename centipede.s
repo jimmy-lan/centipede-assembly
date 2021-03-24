@@ -45,7 +45,7 @@
     # Objects
     centipedeLocations: .word 0, 1, 2, 3, 4, 5, 6, 7, 8, 9
     centipedeLength: .word 10
-    blasterLocation: .word 41
+    blasterLocation: .word 1060
 
     sampleString: .asciiz "a"
 
@@ -70,22 +70,12 @@ main:
 
 game_loop_main:
     # Do something
-    # la			$a1, centipedeLocations			# 
-    # lw			$a2, centipedeLength			# 
-    # jal			draw_centipede				# jump to draw_centipede and save position to $ra
-    # lw			$a0, blasterLocation			# 
-    addi		$a0, $zero, 62
+    la			$a1, centipedeLocations			# 
+    lw			$a2, centipedeLength			# 
+    jal			draw_centipede				# jump to draw_centipede and save position to $ra
+    lw			$a0, blasterLocation			# 
     jal			draw_blaster				# jump to draw_blaster and save position to $ra
-    addi		$a0, $zero, 20
-    jal			draw_blaster
-    addi		$a0, $zero, 21
-    jal			draw_blaster
-    addi		$a0, $zero, 41
-    jal			draw_blaster
-    addi		$a0, $zero, 42
-    jal			draw_blaster
-    addi		$a0, $zero, 63
-    jal			draw_blaster
+    
     
     jal			sleep				# jump to sleep and save position to $ra
     
