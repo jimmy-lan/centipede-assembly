@@ -35,6 +35,7 @@
     screenWeight: .word 21          # Screen width in "unit"s
     unitWidth: .word 12             # Width of "unit"
     screenLinePixels: .word 256     # Number of pixels in a line of screen
+    screenLineUnusedPixels: .word 4 # Number of pixels per line that is unused
 
     # Colors
     backgroundColor: .word 0x00000000
@@ -139,11 +140,21 @@ draw_centipede_segment:
     addi		$t2, $a0, 0			    # Load location to draw centipede to $t2
     lw			$t0, centipedeColor		# $t0 = centipedeColor
     lw			$t1, screenLinePixels	# $t1 = screenLinePixels
+    lw			$t4, screenLineUnusedPixels
     
     # Calculate actual display address
-    lw			$t3, unitWidth			#
-    mult	    $t2, $t3			    # $t2 * 12 = Hi and Lo registers
+    lw			$t3, unitWidth			# Load width per "unit" to $t3
+    mult	    $t2, $t3			    # $t2 * $t3 (unit width) = Hi and Lo registers
     mflo	    $t2					    # copy Lo to $t2
+    # Since we do not use "screenLineUnusedPixels" pixels per line, 
+    # we need to add these values in for accurate positioning.
+    div			$t2, $t1			    # $t2 / $t1
+    mflo	    $t5					    # $t5 = floor($t2 / $t1)
+    
+    mult	    $t5, $t4			    # $t5 * $t4 = Hi and Lo registers
+    mflo	    $t5					    # copy Lo to $t5
+    add			$t2, $t2, $t5		    # $t2 = $t2 + $t5
+    
     add			$t2, $t2, $s7		    # $t2 = $t2 + $s7 (display address)
     
     # Draw a segment of centipede (3x3 block)
@@ -191,12 +202,21 @@ draw_blaster:
     lw			$t0, blasterColor		# $t0 = blasterColor
     lw			$t1, screenLinePixels	# $t1 = screenLinePixels
     lw			$t9, backgroundColor	# $t9 = backgroundColor
-    
+    lw			$t4, screenLineUnusedPixels
 
     # Calculate actual display address
-    lw			$t3, unitWidth			#
-    mult	    $t2, $t3			    # $t2 * 12 = Hi and Lo registers
+    lw			$t3, unitWidth			# Load width per "unit" to $t3
+    mult	    $t2, $t3			    # $t2 * $t3 (unit width) = Hi and Lo registers
     mflo	    $t2					    # copy Lo to $t2
+    # Since we do not use "screenLineUnusedPixels" pixels per line, 
+    # we need to add these values in for accurate positioning.
+    div			$t2, $t1			    # $t2 / $t1
+    mflo	    $t5					    # $t5 = floor($t2 / $t1)
+    
+    mult	    $t5, $t4			    # $t5 * $t4 = Hi and Lo registers
+    mflo	    $t5					    # copy Lo to $t5
+    add			$t2, $t2, $t5		    # $t2 = $t2 + $t5
+
     add			$t2, $t2, $s7		    # $t2 = $t2 + $s7 (display address)
 
     # Draw bug blaster
