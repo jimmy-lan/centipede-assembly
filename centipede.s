@@ -41,6 +41,7 @@
 
     # Objects
     centipedeLocations: .word 0, 1, 2, 3, 4, 5, 6, 7, 8, 9
+    centipedeLength: .word 10
 
 .globl main
 .text
@@ -63,9 +64,10 @@ main:
 
 game_loop_main:
     # Do something
-    addi		$a0, $zero, 0			# $a0 = $zero + 0
+    la			$a0, centipedeLocations			# 
+    lw			$a2, centipedeLength			# 
     
-    jal			draw_centipede_segment				# jump to draw_centipede_segment and save position to $ra
+    jal			draw_centipede				# jump to draw_centipede and save position to $ra
 
     jal			sleep				# jump to sleep and save position to $ra
     
