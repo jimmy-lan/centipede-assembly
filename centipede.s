@@ -39,6 +39,7 @@
     # Colors
     backgroundColor: .word 0x00000000
     centipedeColor: .word 0x00ff0000
+    blasterColor: .word 0x00ffffff
 
     # Objects
     centipedeLocations: .word 0, 1, 2, 3, 4, 5, 6, 7, 8, 9
@@ -77,7 +78,7 @@ game_loop_main:
 
 
 ############################################################################################
-	
+
 program_exit:
 	li $v0, 10 # terminate the program gracefully
 	syscall
@@ -171,6 +172,59 @@ draw_centipede_segment:
     jr			$ra					    # jump to $ra
 
 # END FUN draw_centipede_segment
+
+# FUN draw_blaster
+# ARGS:
+# $a0: location of bug blaster
+draw_blaster:
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    addi		$t2, $a0, 0			    # Load location to draw blaster to $t2
+    lw			$t0, blasterColor		# $t0 = blasterColor
+    lw			$t1, screenLinePixels	# $t1 = screenLinePixels
+    lw			$t9, backgroundColor	# $t9 = backgroundColor
+    
+
+    # Calculate actual display address
+    lw			$t3, unitWidth			#
+    mult	    $t2, $t3			    # $t2 * 12 = Hi and Lo registers
+    mflo	    $t2					    # copy Lo to $t2
+    add			$t2, $t2, $s7		    # $t2 = $t2 + $s7 (display address)
+
+    # Draw bug blaster
+    # First line
+    sw			$t9, 0($t2)
+    sw			$t0, 4($t2)
+    sw			$t9, 8($t2)
+
+    # Second line
+    addi		$t2, $t2, $t1			# $t2 = $t2 + $t1, goes to the next line at this location
+    sw			$t0, 0($t2)
+    sw			$t0, 4($t2)
+    sw			$t0, 8($t2)
+
+    # Third line
+    addi		$t2, $t2, $t1			# $t2 = $t2 + $t1, goes to the next line at this location
+    sw			$t0, 0($t2)
+    sw			$t9, 4($t2)
+    sw			$t0, 8($t2)
+
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+
+    move 		$v0, $zero			    # $v0 = $zero
+    jr			$ra					    # jump to $ra
+
+# END FUN draw_blaster
 
 
 ##############################################
