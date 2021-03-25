@@ -32,14 +32,15 @@
     # Display
     displayAddress:	 .word 0x10008000
     screenHeight: .word 21          # Screen height in "unit"s
-    screenWidth: .word 21          # Screen width in "unit"s
+    screenWidth: .word 21           # Screen width in "unit"s
     unitWidth: .word 12             # Width of "unit"
-    screenLinePixels: .word 256     # Width of pixels in a line of screen
-    screenLineUnusedPixels: .word 4 # Width of pixels per line that is unused
+    screenLineWidth: .word 256      # Width of pixels in a line of screen
+    screenLineUnusedWidth: .word 4  # Width of pixels per line that is unused
 
     # Colors
     backgroundColor: .word 0x00000000
-    centipedeColor: .word 0x00ff0000
+    centipedeColor: .word 0x00f7a634
+    centipedeHeadColor: .word 0x00e09b3a
     blasterColor: .word 0x00ffffff
 
     # Objects
@@ -99,21 +100,27 @@ program_exit:
 # $a2: Length of centipede array
 draw_centipede:
     addi		$sp, $sp, -4			# $sp -= 4
-    sw			$ra, 0($sp)		
+    sw			$ra, 0($sp)
 
     draw_centipede_loop:
         lw			$a0, 0($a1)			                # Load current segment to draw
+        addi		$a2, $a2, -1			            # Decrement loop counter
 
+        # Color the head of centipede with a different color
+        beq			$a2, $zero, dc_load_head_color	    # if $a2 == $zero then dc_load_head_color
+        dc_load_segment_color:
+        lw			$a3, centipedeColor			        # Load regular centipede segment color
+        j			dc_end_load_color				    # jump to dc_end_load_color
+            
+        dc_load_head_color:
+        lw			$a3, centipedeHeadColor			    # Load head color for centipede segment
+        
+        dc_end_load_color:
         jal			draw_centipede_segment	            # jump to draw_centipede_segment and save position to $ra
         
         addi 		$a1, $a1, 4			                # Increment index to next element
-        addi		$a2, $a2, -1			            # Decrement loop counter
         bgt			$a2, $zero, draw_centipede_loop	    # if $a2 > $zero then draw_centipede_loop
         
-    lw			$s0, 16($sp)
-    lw			$s1, 12($sp)
-    lw			$s2, 8($sp)
-    lw			$s3, 4($sp)
     lw			$ra, 0($sp)
     addi		$sp, $sp, 4			# $sp += 4
 
@@ -125,19 +132,17 @@ draw_centipede:
 # FUN draw_centipede_segment
 # ARGS:
 # $a0: Location of centipede. Should be a number from 0 to screenWidth.
+# $a3: Color of this segment
 draw_centipede_segment:
-    addi		$sp, $sp, -4			# $sp -= 4
+    addi		$sp, $sp, -4			    # $sp -= 4
     sw			$ra, 0($sp)
-
-    addi		$t2, $a0, 0			    # Load location to draw centipede to $t2
     
-    move 		$a0, $t2			    # $a0 = $t2
-    jal			calc_display_address	# jump to calc_display_address and save position to $ra
-    move 		$t2, $v0			# $t2 = $v0
+    jal			calc_display_address	    # jump to calc_display_address and save position to $ra
+    move 		$t2, $v0			        # $t2 = $v0
     
-    lw			$t0, centipedeColor		# $t0 = centipedeColor
-    lw			$t1, screenLinePixels	# $t1 = screenLinePixels
-    lw			$t4, screenLineUnusedPixels
+    move 		$t0, $a3			        # $t0 = $a3
+    lw			$t1, screenLineWidth	    # $t1 = screenLineWidth
+    lw			$t4, screenLineUnusedWidth  # $t4 = screenLineUnusedWidth
 
     # Draw a segment of centipede (3x3 block)
     # First line
@@ -146,22 +151,22 @@ draw_centipede_segment:
     sw			$t0, 8($t2)
     
     # Second line
-    add		    $t2, $t2, $t1			# $t2 = $t2 + $t1, goes to the next line at this location
+    add		    $t2, $t2, $t1			    # $t2 = $t2 + $t1, goes to the next line at this location
     sw			$t0, 0($t2)
     sw			$t0, 4($t2)
     sw			$t0, 8($t2)
 
     # Third line
-    add		    $t2, $t2, $t1			# $t2 = $t2 + $t1, goes to the next line at this location
+    add		    $t2, $t2, $t1			    # $t2 = $t2 + $t1, goes to the next line at this location
     sw			$t0, 0($t2)
     sw			$t0, 4($t2)
     sw			$t0, 8($t2)
 
     lw			$ra, 0($sp)
-    addi		$sp, $sp, 4 			# $sp += 4
+    addi		$sp, $sp, 4 			    # $sp += 4
 
-    move 		$v0, $zero			    # $v0 = $zero
-    jr			$ra					    # jump to $ra
+    move 		$v0, $zero			        # $v0 = $zero
+    jr			$ra					        # jump to $ra
 
 # END FUN draw_centipede_segment
 
@@ -179,7 +184,7 @@ draw_blaster:
     move 		$t2, $v0			    # $t2 = $v0
 
     lw			$t0, blasterColor		# $t0 = blasterColor
-    lw			$t1, screenLinePixels	# $t1 = screenLinePixels
+    lw			$t1, screenLineWidth	# $t1 = screenLineWidth
     lw			$t9, backgroundColor	# $t9 = backgroundColor
 
     # Draw bug blaster
@@ -240,7 +245,7 @@ calc_display_address:
 
     move 		$t2, $a0			# $t2 = $a0
     lw			$t1, screenWidth			
-    lw			$t4, screenLineUnusedPixels 
+    lw			$t4, screenLineUnusedWidth 
 
     # Calculate actual display address
     # Multiply $t2 by unit width
@@ -248,7 +253,7 @@ calc_display_address:
     mult	    $t2, $t3			    # $t2 * $t3 (unit width) = Hi and Lo registers
     mflo	    $t2					    # copy Lo to $t2
 
-    # Since we do not use "screenLineUnusedPixels" pixels per line, 
+    # Since we do not use "screenLineUnusedWidth" pixels per line, 
     # we need to account for these values in for accurate positioning.
     
     # Account for the last position
