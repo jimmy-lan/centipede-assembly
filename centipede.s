@@ -44,7 +44,8 @@
     blasterColor: .word 0x00ffffff
 
     # Objects
-    centipedeLocations: .word 0, 1, 2, 3, 4, 5, 6, 7, 8, 9
+    centipedeLocations: .word 0, 1, 2, 3, -1, 5, 6, 7, 8, 9
+    centipedeLocationEmpty: .word -1     # Location value to indicate a "dead" centipede segment
     centipedeLength: .word 10
     blasterLocation: .word 1060
 
@@ -103,22 +104,31 @@ draw_centipede:
     sw			$ra, 0($sp)
 
     draw_centipede_loop:
-        lw			$a0, 0($a1)			                # Load current segment to draw
-        addi		$a2, $a2, -1			            # Decrement loop counter
+        lw			$a0, 0($a1)			                # load current segment to draw
+        addi		$a2, $a2, -1			            # decrement loop counter
 
+        # If the centipede segment is marked "dead", then skip draw
+        lw			$t0, centipedeLocationEmpty     	# $t0 = centipedeLocationEmpty
+        beq			$a0, $t0, dc_skip_draw_segment	    # if $a0 == $t0 then dc_skip_draw_segment
+        
         # Color the head of centipede with a different color
-        beq			$a2, $zero, dc_load_head_color	    # if $a2 == $zero then dc_load_head_color
+        beq			$a2, $zero, dc_load_head_color	    # if we reach the end of array, then this is a head
+        lw			$t1, 4($a1)			                # load the next element in the location array
+        beq			$t1, $t0, dc_load_head_color	    # if the next segment is marked "dead", then this is a head
+        
         dc_load_segment_color:
-        lw			$a3, centipedeColor			        # Load regular centipede segment color
+        lw			$a3, centipedeColor			        # load regular centipede segment color
         j			dc_end_load_color				    # jump to dc_end_load_color
-            
+        
         dc_load_head_color:
-        lw			$a3, centipedeHeadColor			    # Load head color for centipede segment
+        lw			$a3, centipedeHeadColor			    # load head color for centipede segment
         
         dc_end_load_color:
         jal			draw_centipede_segment	            # jump to draw_centipede_segment and save position to $ra
         
-        addi 		$a1, $a1, 4			                # Increment index to next element
+        dc_skip_draw_segment:
+
+        addi 		$a1, $a1, 4			                # increment index to next element
         bgt			$a2, $zero, draw_centipede_loop	    # if $a2 > $zero then draw_centipede_loop
         
     lw			$ra, 0($sp)
