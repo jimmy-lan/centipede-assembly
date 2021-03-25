@@ -70,14 +70,13 @@ main:
 
 game_loop_main:
     # Do something
-    la			$a1, centipedeLocations			# 
-    lw			$a2, centipedeLength			# 
+    la			$a1, centipedeLocations		# 
+    lw			$a2, centipedeLength		# 
     jal			draw_centipede				# jump to draw_centipede and save position to $ra
-    lw			$a0, blasterLocation			# 
+    lw			$a0, blasterLocation		# 
     jal			draw_blaster				# jump to draw_blaster and save position to $ra
     
-    
-    jal			sleep				# jump to sleep and save position to $ra
+    jal			sleep				        # jump to sleep and save position to $ra
     
     j			game_loop_main				# jump to game_loop_main
 
@@ -99,11 +98,7 @@ program_exit:
 # $a1: Address of locations of centipede segments
 # $a2: Length of centipede array
 draw_centipede:
-    addi		$sp, $sp, -20			# $sp -= 20
-    sw			$s0, 16($sp)
-    sw			$s1, 12($sp)
-    sw			$s2, 8($sp)
-    sw			$s3, 4($sp)
+    addi		$sp, $sp, -4			# $sp -= 4
     sw			$ra, 0($sp)		
 
     draw_centipede_loop:
@@ -120,7 +115,7 @@ draw_centipede:
     lw			$s2, 8($sp)
     lw			$s3, 4($sp)
     lw			$ra, 0($sp)
-    addi		$sp, $sp, 20			# $sp += 20
+    addi		$sp, $sp, 4			# $sp += 4
 
     move 		$v0, $zero			# $v0 = $zero
     jr			$ra					# jump to $ra
@@ -131,11 +126,7 @@ draw_centipede:
 # ARGS:
 # $a0: Location of centipede. Should be a number from 0 to screenWidth.
 draw_centipede_segment:
-    addi		$sp, $sp, -20			# $sp -= 20
-    sw			$s0, 16($sp)
-    sw			$s1, 12($sp)
-    sw			$s2, 8($sp)
-    sw			$s3, 4($sp)
+    addi		$sp, $sp, -4			# $sp -= 4
     sw			$ra, 0($sp)
 
     addi		$t2, $a0, 0			    # Load location to draw centipede to $t2
@@ -166,12 +157,8 @@ draw_centipede_segment:
     sw			$t0, 4($t2)
     sw			$t0, 8($t2)
 
-    lw			$s0, 16($sp)
-    lw			$s1, 12($sp)
-    lw			$s2, 8($sp)
-    lw			$s3, 4($sp)
     lw			$ra, 0($sp)
-    addi		$sp, $sp, 20			# $sp += 20
+    addi		$sp, $sp, 4 			# $sp += 4
 
     move 		$v0, $zero			    # $v0 = $zero
     jr			$ra					    # jump to $ra
@@ -182,11 +169,7 @@ draw_centipede_segment:
 # ARGS:
 # $a0: location of bug blaster
 draw_blaster:
-    addi		$sp, $sp, -20			# $sp -= 20
-    sw			$s0, 16($sp)
-    sw			$s1, 12($sp)
-    sw			$s2, 8($sp)
-    sw			$s3, 4($sp)
+    addi		$sp, $sp, -4			# $sp -= 4
     sw			$ra, 0($sp)
 
     addi		$t2, $a0, 0			    # Load location to draw blaster to $t2
@@ -217,12 +200,8 @@ draw_blaster:
     sw			$t9, 4($t2)
     sw			$t0, 8($t2)
 
-    lw			$s0, 16($sp)
-    lw			$s1, 12($sp)
-    lw			$s2, 8($sp)
-    lw			$s3, 4($sp)
     lw			$ra, 0($sp)
-    addi		$sp, $sp, 20			# $sp += 20
+    addi		$sp, $sp, 4			    # $sp += 4
 
     move 		$v0, $zero			    # $v0 = $zero
     jr			$ra					    # jump to $ra
@@ -256,11 +235,7 @@ sleep:
 # $a0: position
 # RETURN $v0: display address to be used
 calc_display_address:
-    addi		$sp, $sp, -20			# $sp -= 20
-    sw			$s0, 16($sp)
-    sw			$s1, 12($sp)
-    sw			$s2, 8($sp)
-    sw			$s3, 4($sp)
+    addi		$sp, $sp, -4			# $sp -= 4
     sw			$ra, 0($sp)
 
     move 		$t2, $a0			# $t2 = $a0
@@ -292,12 +267,8 @@ calc_display_address:
 
     add			$t2, $t2, $s7		    # $t2 = $t2 + $s7 (display address)
 
-    lw			$s0, 16($sp)
-    lw			$s1, 12($sp)
-    lw			$s2, 8($sp)
-    lw			$s3, 4($sp)
     lw			$ra, 0($sp)
-    addi		$sp, $sp, 20			# $sp += 20
+    addi		$sp, $sp, 4			    # $sp += 4
 
     move 		$v0, $t2			    # $v0 = $t2
     jr			$ra					    # jump to $ra
