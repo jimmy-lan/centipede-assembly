@@ -86,7 +86,7 @@ game_loop_main:
 ############################################################################################
 
 program_exit:
-	li $v0, 10 # terminate the program gracefully
+	li $v0, 10                              # terminate the program gracefully
 	syscall
 
 ############################################################################################
