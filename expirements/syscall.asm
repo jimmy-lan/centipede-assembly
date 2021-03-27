@@ -49,32 +49,4 @@ print_result:
     jr		$ra					    # jump to $ra
 
 # End print random number
-
-# FUN foo
-# ARGS:
-# $a0: arg1
-# $a1: arg2
-# $a2: arg3
-# RETURN $v0: 0
-foo:
-    addi		$sp, $sp, -20			# $sp -= 20
-    sw			$s0, 16($sp)
-    sw			$s1, 12($sp)
-    sw			$s2, 8($sp)
-    sw			$s3, 4($sp)
-    sw			$ra, 0($sp)
-
-    
-
-    lw			$s0, 16($sp)
-    lw			$s1, 12($sp)
-    lw			$s2, 8($sp)
-    lw			$s3, 4($sp)
-    lw			$ra, 0($sp)
-    addi		$sp, $sp, 20			# $sp += 20
-
-    move 		$v0, $zero			# $v0 = $zero
-    jr			$ra					# jump to $ra
-
-# END FUN foo
     
