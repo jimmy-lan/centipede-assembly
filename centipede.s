@@ -61,29 +61,42 @@
 # # Initialization
 ##############################################
 # # Saved register allocations:
+# # $s0: current frame id (only in game loop and main)
 # # $s7: display address
 ##############################################
 
 main:
     # Load values
     lw			$s7, displayAddress			#
-
-    # Keep track of the current frame
-    addi		$s0, $zero, 0			    # $s0 = 0
+    lw			$t1, 0($s1)			# 
+    
 
 ##############################################
 # # Game Loop
 ##############################################
 
+reset_frame:
+    # Frame id definition: 
+    # - It is a number ranging from 0 to framesPerSecond - 1
+    # - It decrements from framesPerSecond - 1 to 0
+    # - It decreases by 1 each time a frame is completed
+    lw			$s0, framesPerSecond		# 
+    subi		$s0, $s0, 1			        # $s0 = $s0 - 1
+    j			game_loop_main				# jump to game_loop_main
+
 game_loop_main:
-    addi		$a0, $zero, 0			# $a0 = $zero + 0
-    la			$a1, centipedeLocations		# 
-    lw			$a2, centipedeLength		# 
-    jal			draw_centipede				# jump to draw_centipede and save position to $ra
+    # Centipede
+    move 		$a0, $s0			        # $a0 = $s0
+    jal			control_centipede			# jump to control_centipede and save position to $ra
+
+    # Temporaries
     lw			$a0, blasterLocation		# 
     jal			draw_blaster				# jump to draw_blaster and save position to $ra
     
+    # Frame control
     jal			sleep				        # jump to sleep and save position to $ra
+    subi		$s0, $s0, 1			        # $s0 = $s0 - 1
+    beq			$s0, $zero, reset_frame	    # if $s0 == $zero then reset_frame
     
     j			game_loop_main				# jump to game_loop_main
 
@@ -145,7 +158,6 @@ control_centipede:
     # --- END Move and redraw centipede
 
     end_control_centipede:
-
     lw			$s0, 16($sp)
     lw			$s1, 12($sp)
     lw			$s2, 8($sp)
