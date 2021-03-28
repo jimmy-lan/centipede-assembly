@@ -94,6 +94,49 @@ program_exit:
 ##############################################
 # # Logics
 ##############################################
+# FUN move_centipede
+# - Given the current state of centipede, calculate the next
+# - state and store the info back to the arrays.
+# ARGS:
+# $a0: Address of array representing centipede locations.
+# $a1: Address of array representing centipede directions.
+# $a2: Length of centipede.
+move_centipede:
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    # Move arguments to saved registers
+    move 		$s0, $a0			                # $s0 = $a0
+    move 		$s1, $a1			                # $s1 = $a1
+    move 		$s2, $a2			                # $s2 = $a2
+
+    move_centipede_loop:
+        lw			$a0, 0($s0)			            # load current centipede location
+        lw			$a3, 0($s1)			            # load current centipede direction
+        
+        jal			move_centipede_segment			# jump to move_centipede_segment and save position to $ra
+        
+        addi		$s2, $s2, -1			        # decrement loop counter
+        addi		$s0, $s0, 4			            # increment to next centipede segment location
+        addi		$s1, $s1, 4			            # increment to next centipede segment direction
+        
+        bne			$s2, $zero, move_centipede_loop	# if $s2 != $zero then move_centipede_loop
+    
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+
+    move 		$v0, $zero			# $v0 = $zero
+    jr			$ra					# jump to $ra
+
+# END FUN move_centipede
 # FUN move_centipede_segment
 # ARGS:
 # $a0: Current location of the centipede.
@@ -110,6 +153,10 @@ move_centipede_segment:
     sw			$s3, 4($sp)
     sw			$ra, 0($sp)
 
+    # If location is empty, then do not do anything
+    lw			$t5, centipedeLocationEmpty			# $t5 = centipedeLocationEmpty
+    beq			$a0, $t5, end_mcs	                # if $a0 == $t5 then end_mcs
+    
     # Main idea: continue the current direction if "turning conditions" are not met
 
     lw			$t0, screenPixelUnits
