@@ -35,6 +35,7 @@
     unitWidth: .word 12             # Width of "unit"
     screenLineWidth: .word 256      # Width of pixels in a line of screen
     screenLineUnusedWidth: .word 4  # Width of pixels per line that is unused
+    framesPerSecond: .word 20       # Number of frames per second (Note: 1000 / framesPerSecond should be an int)
 
     # Colors
     backgroundColor: .word 0x00000000
@@ -47,6 +48,7 @@
     centipedeLocationEmpty: .word -1     # Location value to indicate a "dead" centipede segment
     centipedeDirections: .word 1, 1, 1, 1, 1, 1, 1, 1, 1, 1     # 1: goes right, -1: goes left
     centipedeLength: .word 10
+    centipedeFramesPerMove: .word 10    # Number of frames per movement of the centipede
     blasterLocation: .word 1060
 
     sampleString: .asciiz "a"
@@ -63,15 +65,18 @@
 ##############################################
 
 main:
-    lw			$s7, displayAddress			# 
-    
+    # Load values
+    lw			$s7, displayAddress			#
+
+    # Keep track of the current frame
+    addi		$s0, $zero, 0			    # $s0 = 0
 
 ##############################################
 # # Game Loop
 ##############################################
 
 game_loop_main:
-    # Do something
+    addi		$a0, $zero, 0			# $a0 = $zero + 0
     la			$a1, centipedeLocations		# 
     lw			$a2, centipedeLength		# 
     jal			draw_centipede				# jump to draw_centipede and save position to $ra
@@ -90,6 +95,47 @@ program_exit:
 	syscall
 
 ############################################################################################
+
+##############################################
+# # Controllers
+##############################################
+
+# FUN control_centipede
+# ARGS:
+# $a0: current frame number. 
+#      e.g., if we have 20 frames per second, this should be a number between 0 and 19.
+control_centipede:
+    addi		$sp, $sp, -20			            # $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    # Load constants
+    lw			$s0, centipedeFramesPerMove		    # 
+    
+    # Check if centipede should move
+    div			$a0, $s0			                # $a0 / $s0
+    mfhi	    $t3					                # $t3 = $a0 mod $s0
+    bne			$t3, $zero, end_control_centipede	# if $t3 != $zero then end_control_centipede
+    
+    # Move and redraw centipede
+
+
+    end_control_centipede: 
+
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+
+    move 		$v0, $zero			    # $v0 = $zero
+    jr			$ra					    # jump to $ra
+
+# END FUN control_centipede
 
 ##############################################
 # # Logics
@@ -177,16 +223,16 @@ move_centipede_segment:
 
     # If the column number is 0, then the next location is to the bottom of the current cell
     # and the direction should change to 1 (i.e., goes to right).
-    addi		$v0, $a0, $t0			            # $v0 = $a0 + $t0, the next location
+    add 		$v0, $a0, $t0			            # $v0 = $a0 + $t0, the next location
     move 		$v1, $s0			                # $v1 = $s1, set next direction to right
     
     j			end_mcs	    # jump to mcs_direction_end_if
     mcs_goes_right:
-    bne			$t3, $t1, msc_direction_end_if	    # if $t3 != $t1 then msc_direction_end_if
+    bne			$t3, $t1, mcs_direction_end_if	    # if $t3 != $t1 then msc_direction_end_if
     
     # If the column number corresponds to the right edge, then the next location is to the bottom of the current
     # cell and the direction should change to -1 (i.e., goes to left).
-    addi		$v0, $a0, $t0			            # $v0 = $a0 + $t0, the next location
+    add 		$v0, $a0, $t0			            # $v0 = $a0 + $t0, the next location
     move 		$v1, $s1			                # $v1 = $s1, set next direction to left
     
     j			end_mcs				                # jump to end_mcs
@@ -201,7 +247,7 @@ move_centipede_segment:
     # If none of the above turning conditions are met
     end_turning_condition_checks:
     # Continue moving along the original direction
-    addi		$v0, $a0, $a3			            # $v0 = $a0 + $a3
+    add 		$v0, $a0, $a3			            # $v0 = $a0 + $a3
     move 		$v1, $a3			                # $v1 = $a3
 
     end_mcs:
@@ -221,14 +267,22 @@ move_centipede_segment:
 ##############################################
 # # Graphics
 ##############################################
-
 # FUN draw_centipede
 # ARGS:
+# $a0: isClear. 
+#      Set to 1 to clear centipede drawing at centipede array locations.
+#      Set to 0 to draw centipede at array locations.
 # $a1: Address of locations of centipede segments
 # $a2: Length of centipede array
 draw_centipede:
-    addi		$sp, $sp, -4			# $sp -= 4
+    addi		$sp, $sp, -20			                # $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
     sw			$ra, 0($sp)
+
+    move 		$s0, $a0			                    # $s0 = $a0
 
     draw_centipede_loop:
         lw			$a0, 0($a1)			                # load current segment to draw
@@ -237,6 +291,15 @@ draw_centipede:
         # If the centipede segment is marked "dead", then skip draw
         lw			$t0, centipedeLocationEmpty     	# $t0 = centipedeLocationEmpty
         beq			$a0, $t0, dc_skip_draw_segment	    # if $a0 == $t0 then dc_skip_draw_segment
+        
+        # If we are clearing centipede from locations, set color to background color
+        beq			$s0, $zero, dc_is_drawing	        # if $s0 == $zero then dc_is_drawing
+        
+        dc_is_clearing:
+        lw			$a3, backgroundColor	            # $a3 = backgroundColor
+        j			dc_end_load_color				    # jump to dc_end_load_color
+
+        dc_is_drawing:
         
         # Color the head of centipede with a different color
         beq			$a2, $zero, dc_load_head_color	    # if we reach the end of array, then this is a head
@@ -258,11 +321,15 @@ draw_centipede:
         addi 		$a1, $a1, 4			                # increment index to next element
         bgt			$a2, $zero, draw_centipede_loop	    # if $a2 > $zero then draw_centipede_loop
         
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
     lw			$ra, 0($sp)
-    addi		$sp, $sp, 4			# $sp += 4
+    addi		$sp, $sp, 20			                # $sp += 20
 
-    move 		$v0, $zero			# $v0 = $zero
-    jr			$ra					# jump to $ra
+    move 		$v0, $zero			                    # $v0 = $zero
+    jr			$ra					                    # jump to $ra
 
 # END FUN draw_centipede
 
@@ -350,7 +417,6 @@ draw_blaster:
 
 # END FUN draw_blaster
 
-
 ##############################################
 # # Utilities
 ##############################################
@@ -360,15 +426,23 @@ sleep:
     addi		$sp, $sp, -20			# $sp -= 20
     sw			$ra, 0($sp)
 
-    li			$v0, 32				# $v0 = 32
-    li			$a0, 50				# $a0 = 50
+    # --- Calculate sleep amount
+    lw			$t0, framesPerSecond    # $t0 = framesPerSecond
+    addi		$t1, $zero, 1000		# $t1 = $zero + 1000
+    
+    div			$t1, $t0			    # $t1 / $t0
+    mflo	    $t2					    # $t2 = floor($t1 / $t0) 
+    # --- END Calculate sleep amount
+
+    li			$v0, 32				    # $v0 = 32
+    move 		$a0, $t2			    # set sleep $t2 milliseconds        
     syscall
 
     lw			$ra, 0($sp)
     addi		$sp, $sp, 20			# $sp += 20
 
-    move 		$v0, $zero			# $v0 = $zero
-    jr			$ra					# jump to $ra
+    move 		$v0, $zero			    # $v0 = $zero
+    jr			$ra					    # jump to $ra
 
 # END FUN sleep
 
