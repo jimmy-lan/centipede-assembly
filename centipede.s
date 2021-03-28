@@ -120,10 +120,31 @@ control_centipede:
     mfhi	    $t3					                # $t3 = $a0 mod $s0
     bne			$t3, $zero, end_control_centipede	# if $t3 != $zero then end_control_centipede
     
-    # Move and redraw centipede
+    # --- Move and redraw centipede
+    # Load constants
+    la			$s0, centipedeLocations		        # 
+    la		    $s1, centipedeDirections		    # 
+    lw			$s2, centipedeLength		        #
 
+    # Clear current centipede
+    addi		$a0, $zero, 1			            # $a0 = 1, indicates clear centipede
+    move 		$a1, $s0			                # $a1 = $s0
+    move 		$a2, $s2			                # $a2 = $s2
+    jal			draw_centipede				        # jump to draw_centipede and save position to $ra
+    
+    # Calculate the next centipede state
+    move 		$a0, $s0			                # $a0 = $s0
+    move 		$a1, $s1			                # $a1 = $s1
+    move 		$a2, $s2			                # $a2 = $s2
+    jal			move_centipede				        # jump to move_centipede and save position to $ra
+    
+    # Draw new centipede
+    move 		$a0, $zero			                # $a0 = $zero
+    move 		$a1, $s0			                # $a1 = $s0
+    move 		$a2, $s2			                # $a2 = $s2
+    # --- END Move and redraw centipede
 
-    end_control_centipede: 
+    end_control_centipede:
 
     lw			$s0, 16($sp)
     lw			$s1, 12($sp)
@@ -272,8 +293,8 @@ move_centipede_segment:
 # $a0: isClear. 
 #      Set to 1 to clear centipede drawing at centipede array locations.
 #      Set to 0 to draw centipede at array locations.
-# $a1: Address of locations of centipede segments
-# $a2: Length of centipede array
+# $a1: Address of locations of centipede segments.
+# $a2: Length of centipede array.
 draw_centipede:
     addi		$sp, $sp, -20			                # $sp -= 20
     sw			$s0, 16($sp)
