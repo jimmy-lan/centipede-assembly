@@ -51,7 +51,7 @@
     centipedeFramesPerMove: .word 10    # Number of frames per movement of the centipede
     blasterLocation: .word 1060
 
-    sampleString: .asciiz "a"
+    sampleString: .asciiz "a\n"
 
 .globl main
 .text
@@ -83,10 +83,6 @@ reset_frame:
     j			game_loop_main				# jump to game_loop_main
 
 game_loop_main:
-    move		$a0, $s0			# $a0 = $s0
-    li			$v0, 1				# syscall print int
-    syscall							# execute
-
     # Centipede
     move 		$a0, $s0			        # $a0 = $s0
     jal			control_centipede			# jump to control_centipede and save position to $ra
@@ -157,6 +153,8 @@ control_centipede:
     move 		$a0, $zero			                # $a0 = $zero
     move 		$a1, $s0			                # $a1 = $s0
     move 		$a2, $s2			                # $a2 = $s2
+    jal			draw_centipede				        # jump to draw_centipede and save position to $ra
+    
     # --- END Move and redraw centipede
 
     end_control_centipede:
