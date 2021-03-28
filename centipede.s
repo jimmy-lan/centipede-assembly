@@ -513,10 +513,7 @@ calc_display_address:
     # Since we do not use "screenLineUnusedWidth" pixels per line, 
     # we need to account for these values in for accurate positioning.
     
-    # Account for the last position
-    # There is 1 pixel unused in the end. I hard coded this for now.
-    # Change this line when unused pixels per line changes.
-    addi 		$t6, $a0, 1		    	# $t6 = $a0 + 1
+    move 		$t6, $a0		    	# $t6 = $a0
 
     # $t5 stores the number of previous lines that we should account for
     div			$t6, $t1			    # $t6 / $t1
