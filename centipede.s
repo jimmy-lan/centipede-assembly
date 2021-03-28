@@ -44,10 +44,10 @@
     blasterColor: .word 0x00ffffff
 
     # Objects
-    centipedeLocations: .word 0
+    centipedeLocations: .word 0, 1, 2, 3, 4, 5, 6, 7, 8, 9
     centipedeLocationEmpty: .word -1     # Location value to indicate a "dead" centipede segment
-    centipedeDirections: .word 1     # 1: goes right, -1: goes left
-    centipedeLength: .word 1
+    centipedeDirections: .word 1, 1, 1, 1, 1, 1, 1, 1, 1, 1     # 1: goes right, -1: goes left
+    centipedeLength: .word 10
     centipedeFramesPerMove: .word 10    # Number of frames per movement of the centipede
     blasterLocation: .word 1060
 
@@ -181,7 +181,7 @@ control_centipede:
 # $a1: Address of array representing centipede directions.
 # $a2: Length of centipede.
 move_centipede:
-    addi		$sp, $sp, -20			# $sp -= 20
+    addi		$sp, $sp, -20			            # $sp -= 20
     sw			$s0, 16($sp)
     sw			$s1, 12($sp)
     sw			$s2, 8($sp)
@@ -247,7 +247,13 @@ move_centipede_segment:
     mcs_main:
     # Main idea: continue the current direction if "turning conditions" are not met
     lw			$t0, screenPixelUnits
-    subi		$t1, $t0, 1		                    # $t1 = $t0 - 1, the column number for the edge	
+    subi		$t1, $t0, 1		                    # $t1 = $t0 - 1, the column number for the edge
+    
+    # $t7 stores screenPixelUnits * 3, which is the amount of pixel locations
+    # to be added when we move the centipede to the next line.
+    addi		$t2, $zero, 3			            # $t2 = 3, multiplication factor for row
+    mult	    $t0, $t2			# $t0 * $t2 = Hi and Lo registers
+    mflo	    $t7					# copy Lo to $t7
     
     # --- Identify if the centipede is about to hit the border
     # Check the column # at which the centipede segment is currently located
@@ -264,7 +270,7 @@ move_centipede_segment:
 
     # If the column number is 0, then the next location is to the bottom of the current cell
     # and the direction should change to 1 (i.e., goes to right).
-    add 		$v0, $a0, $t0			            # $v0 = $a0 + $t0, the next location
+    add 		$v0, $a0, $t7			            # $v0 = $a0 + $t7, the next location
     move 		$v1, $s0			                # $v1 = $s1, set next direction to right
     
     j			end_mcs	    # jump to mcs_direction_end_if
@@ -273,7 +279,7 @@ move_centipede_segment:
     
     # If the column number corresponds to the right edge, then the next location is to the bottom of the current
     # cell and the direction should change to -1 (i.e., goes to left).
-    add 		$v0, $a0, $t0			            # $v0 = $a0 + $t0, the next location
+    add 		$v0, $a0, $t7			            # $v0 = $a0 + $t7, the next location
     move 		$v1, $s1			                # $v1 = $s1, set next direction to left
     
     j			end_mcs				                # jump to end_mcs
