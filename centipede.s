@@ -31,8 +31,7 @@
 .data
     # Display
     displayAddress:	 .word 0x10008000
-    screenHeight: .word 21          # Screen height in "unit"s
-    screenWidth: .word 21           # Screen width in "unit"s
+    screenPixelUnits: .word 21      # Screen width and height in "unit"s
     unitWidth: .word 12             # Width of "unit"
     screenLineWidth: .word 256      # Width of pixels in a line of screen
     screenLineUnusedWidth: .word 4  # Width of pixels per line that is unused
@@ -46,6 +45,7 @@
     # Objects
     centipedeLocations: .word 0, 1, 2, 3, -1, 5, 6, 7, 8, 9
     centipedeLocationEmpty: .word -1     # Location value to indicate a "dead" centipede segment
+    centipedeDirections: .word 1, 1, 1, 1, 1, 1, 1, 1, 1, 1     # 1: goes right, -1: goes left
     centipedeLength: .word 10
     blasterLocation: .word 1060
 
@@ -90,6 +90,72 @@ program_exit:
 	syscall
 
 ############################################################################################
+
+##############################################
+# # Logics
+##############################################
+# FUN move_centipede_segment
+# ARGS:
+# $a0: Current location of the centipede.
+# $a3: Current direction
+# RETURN:
+# $v0: Next location
+# $v1: Next direction
+move_centipede_segment:
+    addi		$sp, $sp, -20			            # $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    # Main idea: continue the current direction if "turning conditions" are not met
+
+    lw			$t0, screenPixelUnits
+    subi		$t1, $t0, 1			                # $t1 = $t0 - 1, the column number for the edge	
+    
+    # --- Identify if the centipede is about to hit the border
+    # Check the column # at which the centipede segment is currently located
+    div			$a0, $t0			                # $a0 / $t0
+    mfhi	    $t3					                # $t3 = $a0 mod $t0, stores the current column num.
+
+    # Load definitions
+    addi		$s0, $zero, 1			            # $s0 = 1, the right direction indicator
+    addi		$s1, $zero, -1			            # $s1 = -1, the left direction indicator
+    
+    beq			$a3, $s0, mcs_goes_right	        # if $a3 == $s0 then mcs_goes_right
+    mcs_goes_left:
+    bne			$t3, $zero, mcs_direction_end_if    # if $t3 != $zero then mcs_direction_end_if
+
+    # If the column number is 0, then the next location is to the bottom of the current cell
+    # and the direction should change to 1 (i.e., goes to right).
+    addi		$v0, $a0, $t0			            # $v0 = $a0 + $t0, the next location
+    move 		$v1, $s0			                # $v1 = $s1, set next direction to right
+    
+    j			mcs_direction_end_if			    # jump to mcs_direction_end_if
+    mcs_goes_right:
+    bne			$t3, $t1, msc_direction_end_if	    # if $t3 != $t1 then msc_direction_end_if
+    
+    # If the column number corresponds to the right edge, then the next location is to the bottom of the current
+    # cell and the direction should change to -1 (i.e., goes to left).
+    addi		$v0, $a0, $t0			            # $v0 = $a0 + $t0, the next location
+    move 		$v1, $s1			                # $v1 = $s1, set next direction to left
+    
+    mcs_direction_end_if:
+    
+    # --- END Identify if the centipede is about to hit the border
+
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			            # $sp += 20
+
+    move 		$v0, $zero			                # $v0 = $zero
+    jr			$ra					                # jump to $ra
+
+# END FUN move_centipede_segment
 
 ##############################################
 # # Graphics
@@ -141,7 +207,7 @@ draw_centipede:
 
 # FUN draw_centipede_segment
 # ARGS:
-# $a0: Location of centipede. Should be a number from 0 to screenWidth.
+# $a0: Location of centipede. Should be a number from 0 to screenPixelUnits.
 # $a3: Color of this segment
 draw_centipede_segment:
     addi		$sp, $sp, -4			    # $sp -= 4
@@ -254,7 +320,7 @@ calc_display_address:
     sw			$ra, 0($sp)
 
     move 		$t2, $a0			# $t2 = $a0
-    lw			$t1, screenWidth			
+    lw			$t1, screenPixelUnits			
     lw			$t4, screenLineUnusedWidth 
 
     # Calculate actual display address
