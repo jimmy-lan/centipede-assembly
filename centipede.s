@@ -97,7 +97,8 @@ program_exit:
 # FUN move_centipede_segment
 # ARGS:
 # $a0: Current location of the centipede.
-# $a3: Current direction
+# $a3: Current direction. Has to be 1 or -1, where 1 indicates going to the right and -1 indicates
+#      going to the left.
 # RETURN:
 # $v0: Next location
 # $v1: Next direction
@@ -112,7 +113,7 @@ move_centipede_segment:
     # Main idea: continue the current direction if "turning conditions" are not met
 
     lw			$t0, screenPixelUnits
-    subi		$t1, $t0, 1			                # $t1 = $t0 - 1, the column number for the edge	
+    subi		$t1, $t0, 1		                    # $t1 = $t0 - 1, the column number for the edge	
     
     # --- Identify if the centipede is about to hit the border
     # Check the column # at which the centipede segment is currently located
@@ -132,7 +133,7 @@ move_centipede_segment:
     addi		$v0, $a0, $t0			            # $v0 = $a0 + $t0, the next location
     move 		$v1, $s0			                # $v1 = $s1, set next direction to right
     
-    j			mcs_direction_end_if			    # jump to mcs_direction_end_if
+    j			end_mcs	    # jump to mcs_direction_end_if
     mcs_goes_right:
     bne			$t3, $t1, msc_direction_end_if	    # if $t3 != $t1 then msc_direction_end_if
     
@@ -141,9 +142,22 @@ move_centipede_segment:
     addi		$v0, $a0, $t0			            # $v0 = $a0 + $t0, the next location
     move 		$v1, $s1			                # $v1 = $s1, set next direction to left
     
+    j			end_mcs				                # jump to end_mcs
     mcs_direction_end_if:
     
     # --- END Identify if the centipede is about to hit the border
+
+    # TODO Identify if the centipede is about to hit a mushroom
+
+    # --- END Identify if the centipede is about to hit a mushroom
+
+    # If none of the above turning conditions are met
+    end_turning_condition_checks:
+    # Continue moving along the original direction
+    addi		$v0, $a0, $a3			            # $v0 = $a0 + $a3
+    move 		$v1, $a3			                # $v1 = $a3
+
+    end_mcs:
 
     lw			$s0, 16($sp)
     lw			$s1, 12($sp)
@@ -253,7 +267,7 @@ draw_blaster:
     addi		$sp, $sp, -4			# $sp -= 4
     sw			$ra, 0($sp)
 
-    addi		$t2, $a0, 0			    # Load location to draw blaster to $t2
+    addi		$t2, $a0, 0			    # load location to draw blaster to $t2
 
     move 		$a0, $t2			    # $a0 = $t2
     jal			calc_display_address	# jump to calc_display_address and save position to $ra
@@ -316,7 +330,7 @@ sleep:
 # $a0: position
 # RETURN $v0: display address to be used
 calc_display_address:
-    addi		$sp, $sp, -4			# $sp -= 4
+    addi		$sp, $sp, -4		# $sp -= 4
     sw			$ra, 0($sp)
 
     move 		$t2, $a0			# $t2 = $a0
