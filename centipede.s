@@ -48,14 +48,16 @@
     centipedeLocationEmpty: .word -1     # Location value to indicate a "dead" centipede segment
     centipedeDirections: .word 1, 1, 1, 1, 1, 1, 1, 1, 1, 1     # 1: goes right, -1: goes left
     centipedeLength: .word 10
-    centipedeFramesPerMove: .word 10    # Number of frames per movement of the centipede
-    blasterLocation: .word 1060
+    centipedeFramesPerMove: .word 4    # Number of frames per movement of the centipede
+    blasterLocation: .word 1207
+
+    # Personal Space for Bug Blaster
+    personalSpaceStartRow: .word 17
 
     sampleString: .asciiz "a\n"
 
 .globl main
 .text
-
 
 ##############################################
 # # Initialization
@@ -268,21 +270,37 @@ move_centipede_segment:
     mcs_goes_left:
     bne			$t3, $zero, mcs_direction_end_if    # if $t3 != $zero then mcs_direction_end_if
 
-    # If the column number is 0, then the next location is to the bottom of the current cell
-    # and the direction should change to 1 (i.e., goes to right).
-    add 		$v0, $a0, $t7			            # $v0 = $a0 + $t7, the next location
+    # If the column number is 0, then the next direction should change to 1 (i.e., goes to right).
     move 		$v1, $s0			                # $v1 = $s1, set next direction to right
     
-    j			end_mcs	    # jump to mcs_direction_end_if
+    j			mcs_reach_border	                # jump to mcs_reach_border
     mcs_goes_right:
     bne			$t3, $t1, mcs_direction_end_if	    # if $t3 != $t1 then msc_direction_end_if
     
-    # If the column number corresponds to the right edge, then the next location is to the bottom of the current
-    # cell and the direction should change to -1 (i.e., goes to left).
-    add 		$v0, $a0, $t7			            # $v0 = $a0 + $t7, the next location
+    # If the column number corresponds to the right edge, then the next direction should change
+    # to -1 (i.e., goes to left).
     move 		$v1, $s1			                # $v1 = $s1, set next direction to left
     
+    j			mcs_reach_border				    # jump to mcs_reach_border
+    mcs_reach_border:
+    # --- Check if we are now in the pesonal space for bug blaster
+    lw			$t4, personalSpaceStartRow			# $t4 = personalSpaceStartRow
+    # Personal space start location = start row * 3 * screenPixelUnits (/$t0)
+    addi		$t5, $zero, 3			            # $t5 = $zero + 3
+    mult	    $t5, $t4			                # $t5 * $t4 = Hi and Lo registers
+    mflo	    $t5					                # copy Lo to $t5
+    mult	    $t5, $t0			                # $t5 * $t0 = Hi and Lo registers
+    mflo	    $t5					                # copy Lo to $t5
+    bgt			$a0, $t5, mcs_reach_personal_space	# if $a0 > $t5 then mcs_reach_personal_space
+
+    # --- END Check if we are now in the pesonal space for bug blaster
+    
+    add 		$v0, $a0, $t7			            # $v0 = $a0 + $t7, goes down one row
     j			end_mcs				                # jump to end_mcs
+    mcs_reach_personal_space:
+    sub 		$v0, $a0, $t7			            # $v0 = $a0 - $t7, goes up one row
+    j			end_mcs				                # jump to end_mcs
+    
     mcs_direction_end_if:
     
     # --- END Identify if the centipede is about to hit the border
