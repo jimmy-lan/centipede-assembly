@@ -68,7 +68,6 @@
 main:
     # Load values
     lw			$s7, displayAddress			#
-    lw			$t1, 0($s1)			# 
     
 
 ##############################################
@@ -77,14 +76,17 @@ main:
 
 reset_frame:
     # Frame id definition: 
-    # - It is a number ranging from 0 to framesPerSecond - 1
-    # - It decrements from framesPerSecond - 1 to 0
+    # - It is a number ranging from 1 to framesPerSecond
+    # - It decrements from framesPerSecond to 1
     # - It decreases by 1 each time a frame is completed
     lw			$s0, framesPerSecond		# 
-    subi		$s0, $s0, 1			        # $s0 = $s0 - 1
     j			game_loop_main				# jump to game_loop_main
 
 game_loop_main:
+    move		$a0, $s0			# $a0 = $s0
+    li			$v0, 1				# syscall print int
+    syscall							# execute
+
     # Centipede
     move 		$a0, $s0			        # $a0 = $s0
     jal			control_centipede			# jump to control_centipede and save position to $ra
