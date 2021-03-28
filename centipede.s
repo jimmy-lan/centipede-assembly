@@ -44,10 +44,10 @@
     blasterColor: .word 0x00ffffff
 
     # Objects
-    centipedeLocations: .word 0, 1, 2, 3, -1, 5, 6, 7, 8, 9
+    centipedeLocations: .word 0
     centipedeLocationEmpty: .word -1     # Location value to indicate a "dead" centipede segment
-    centipedeDirections: .word 1, 1, 1, 1, 1, 1, 1, 1, 1, 1     # 1: goes right, -1: goes left
-    centipedeLength: .word 10
+    centipedeDirections: .word 1     # 1: goes right, -1: goes left
+    centipedeLength: .word 1
     centipedeFramesPerMove: .word 10    # Number of frames per movement of the centipede
     blasterLocation: .word 1060
 
@@ -189,15 +189,18 @@ move_centipede:
     sw			$ra, 0($sp)
 
     # Move arguments to saved registers
-    move 		$s0, $a0			                # $s0 = $a0
-    move 		$s1, $a1			                # $s1 = $a1
-    move 		$s2, $a2			                # $s2 = $a2
+    move 		$s0, $a0			                # $s0 = centipede locations
+    move 		$s1, $a1			                # $s1 = centipede directions
+    move 		$s2, $a2			                # $s2 = length of centipede
 
     move_centipede_loop:
         lw			$a0, 0($s0)			            # load current centipede location
         lw			$a3, 0($s1)			            # load current centipede direction
         
         jal			move_centipede_segment			# jump to move_centipede_segment and save position to $ra
+        # $v0 - next location, $v1 - next direction
+        sw			$v0, 0($s0)			            # 
+        sw			$v1, 0($s1)			            # 
         
         addi		$s2, $s2, -1			        # decrement loop counter
         addi		$s0, $s0, 4			            # increment to next centipede segment location
@@ -232,12 +235,17 @@ move_centipede_segment:
     sw			$s3, 4($sp)
     sw			$ra, 0($sp)
 
-    # If location is empty, then do not do anything
+    # Check if the current location is empty
     lw			$t5, centipedeLocationEmpty			# $t5 = centipedeLocationEmpty
-    beq			$a0, $t5, end_mcs	                # if $a0 == $t5 then end_mcs
-    
-    # Main idea: continue the current direction if "turning conditions" are not met
+    bne			$a0, $t5, mcs_main	                # if $a0 != $t5 then mcs_main
 
+    # If location is empty, then do not do anything
+    move 		$v0, $t5			                # $v0 = $t5
+    move 		$v1, $a3			                # $v1 = $a3
+    j			end_mcs				                # jump to end_mcs
+    
+    mcs_main:
+    # Main idea: continue the current direction if "turning conditions" are not met
     lw			$t0, screenPixelUnits
     subi		$t1, $t0, 1		                    # $t1 = $t0 - 1, the column number for the edge	
     
@@ -292,7 +300,6 @@ move_centipede_segment:
     lw			$ra, 0($sp)
     addi		$sp, $sp, 20			            # $sp += 20
 
-    move 		$v0, $zero			                # $v0 = $zero
     jr			$ra					                # jump to $ra
 
 # END FUN move_centipede_segment
