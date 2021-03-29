@@ -51,6 +51,7 @@
     centipedeLength: .word 10
     centipedeFramesPerMove: .word 4    # Number of frames per movement of the centipede
     mushrooms: .word 0:399             # Mushrooms will only exist in the first 19 rows (19 * 21)
+    mushroomLength: .word 399
     blasterLocation: .word 410 
 
     # Personal Space for Bug Blaster
@@ -73,6 +74,10 @@ main:
     # Load values
     lw			$s7, displayAddress			#
     
+    # Init mushrooms (Temporary)
+    la		    $t0, mushrooms		        # 
+    addi		$t1, $zero, 1			    # $t1 = $zero + 1
+    sw			$t1, 160($t0)			    # 
 
 ##############################################
 # # Game Loop
@@ -88,12 +93,17 @@ reset_frame:
 
 game_loop_main:
     # Centipede
+    la 		    $a0, mushrooms			    # $a0 = mushrooms
+    lw			$a1, mushroomLength			# 
+    jal			draw_mushrooms				# jump to draw_mushrooms and save position to $ra
     move 		$a0, $s0			        # $a0 = $s0
     jal			control_centipede			# jump to control_centipede and save position to $ra
 
-    # Temporaries
+    # --- Temporaries
     lw			$a0, blasterLocation		# 
     jal			draw_blaster				# jump to draw_blaster and save position to $ra
+
+    # --- END Temporaries
     
     # Frame control
     jal			sleep				        # jump to sleep and save position to $ra
@@ -490,17 +500,20 @@ draw_mushrooms:
     move 		$s0, $a0			    # $s0 = $a0
     move 		$s1, $a1			    # $s1 = $a1
 
+    move 		$t1, $zero			    # $t1 = $zero
+
     draw_mushrooms_loop:
         lw			$a0, 0($s0)			                # load current mushroom to draw
         # Do not draw if the mushroom entry is 0
         beq			$a0, $zero, dmr_skip_draw	        # if $a0 == $zero then dmr_skip_draw
         
+        move 		$a0, $t1			                # $a0 = $t1
         jal			draw_mushroom_at_location			# jump to draw_mushroom_at_location and save position to $ra
 
         dmr_skip_draw:
         addi 		$s0, $s0, 4			                # increment index to next mushroom
-        addi		$s1, $s1, -1			            # decrement loop counter
-        bgt			$s1, $zero, draw_mushrooms_loop	    # if $s1 > $zero then draw_mushrooms_loop
+        addi		$t1, $t1, 1			                # $t1 = $t1 + 1
+        blt			$t1, $s1, draw_mushrooms_loop	    # if $t1 < $s1 then draw_mushrooms_loop
 
     lw			$s0, 16($sp)
     lw			$s1, 12($sp)
@@ -543,9 +556,9 @@ draw_mushroom_at_location:
 
     # Third line
     add 		$t2, $t2, $t1			# $t2 = $t2 + $t1, goes to the next line at this location
-    sw			$t0, 0($t2)
-    sw			$t9, 4($t2)
-    sw			$t0, 8($t2)
+    sw			$t9, 0($t2)
+    sw			$t0, 4($t2)
+    sw			$t9, 8($t2)
 
     lw			$ra, 0($sp)
     addi		$sp, $sp, 4			    # $sp += 4
