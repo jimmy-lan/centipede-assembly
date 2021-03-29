@@ -475,10 +475,48 @@ draw_blaster:
 
 # END FUN draw_blaster
 
+# FUN draw_mushrooms
+# ARGS:
+# $a0: address of array storing all mushrooms
+# $a1: length of the mushroom array
+draw_mushrooms:
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    move 		$s0, $a0			    # $s0 = $a0
+    move 		$s1, $a1			    # $s1 = $a1
+
+    draw_mushrooms_loop:
+        lw			$a0, 0($s0)			                # load current mushroom to draw
+        # Do not draw if the mushroom entry is 0
+        beq			$a0, $zero, dmr_skip_draw	        # if $a0 == $zero then dmr_skip_draw
+        
+        jal			draw_mushroom_at_location			# jump to draw_mushroom_at_location and save position to $ra
+
+        dmr_skip_draw:
+        addi 		$s0, $s0, 4			                # increment index to next mushroom
+        addi		$s1, $s1, -1			            # decrement loop counter
+        bgt			$s1, $zero, draw_mushrooms_loop	    # if $s1 > $zero then draw_mushrooms_loop
+
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20		    # $sp += 20
+
+    move 		$v0, $zero			    # $v0 = $zero
+    jr			$ra					    # jump to $ra
+
+# END FUN draw_mushrooms
+
 # FUN draw_mushroom_at_location
 # ARGS:
 # $a0: position to draw (object grid)
-# RETURN $v0: 0
 draw_mushroom_at_location:
     addi		$sp, $sp, -4			# $sp -= 4
     sw			$ra, 0($sp)
