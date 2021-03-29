@@ -254,8 +254,8 @@ move_centipede_segment:
     # $t7 stores screenPixelUnits * 3, which is the amount of pixel locations
     # to be added when we move the centipede to the next line.
     addi		$t2, $zero, 3			            # $t2 = 3, multiplication factor for row
-    mult	    $t0, $t2			# $t0 * $t2 = Hi and Lo registers
-    mflo	    $t7					# copy Lo to $t7
+    mult	    $t0, $t2			                # $t0 * $t2 = Hi and Lo registers
+    mflo	    $t7					                # copy Lo to $t7
     
     # --- Identify if the centipede is about to hit the border
     # Check the column # at which the centipede segment is currently located
