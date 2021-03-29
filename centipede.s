@@ -563,47 +563,43 @@ object_to_display_grid_location:
 #      0 - object grid, 1 - display grid.
 # RETURN $v0: display address to be used
 calc_display_address:
-    addi		$sp, $sp, -20			# $sp -= 20
-    sw			$s0, 16($sp)
-    sw			$s1, 12($sp)
-    sw			$s2, 8($sp)
-    sw			$s3, 4($sp)
+    addi		$sp, $sp, -4			        # $sp -= 4
     sw			$ra, 0($sp)
 
-    move 		$t2, $a0			# $t2 = $a0
+    bne			$a1, $zero, cda_display_grid	# if $a1 != $zero then cda_display_grid
+    
+    
+    cda_display_grid:
+    move 		$t2, $a0			            # $t2 = $a0
     lw			$t1, screenPixelUnits			
     lw			$t4, screenLineUnusedWidth 
 
     # Calculate actual display address
     # Multiply $t2 by unit width
-    lw			$t3, unitWidth			# Load width per "unit" to $t3
-    mult	    $t2, $t3			    # $t2 * $t3 (unit width) = Hi and Lo registers
-    mflo	    $t2					    # copy Lo to $t2
+    lw			$t3, unitWidth			        # Load width per "unit" to $t3
+    mult	    $t2, $t3			            # $t2 * $t3 (unit width) = Hi and Lo registers
+    mflo	    $t2					            # copy Lo to $t2
 
     # Since we do not use "screenLineUnusedWidth" pixels per line, 
     # we need to account for these values in for accurate positioning.
     
-    move 		$t6, $a0		    	# $t6 = $a0
+    move 		$t6, $a0		    	        # $t6 = $a0
 
     # $t5 stores the number of previous lines that we should account for
-    div			$t6, $t1			    # $t6 / $t1
-    mflo	    $t5					    # $t5 = floor($t2 / $t1)
+    div			$t6, $t1			            # $t6 / $t1
+    mflo	    $t5					            # $t5 = floor($t2 / $t1)
     
     # We will therefore add $t5 * $t4 (unused pixels for every line) to $t2.
-    mult	    $t5, $t4			    # $t5 * $t4 = Hi and Lo registers
-    mflo	    $t5					    # copy Lo to $t5
-    add			$t2, $t2, $t5		    # $t2 = $t2 + $t5
+    mult	    $t5, $t4			            # $t5 * $t4 = Hi and Lo registers
+    mflo	    $t5					            # copy Lo to $t5
+    add			$t2, $t2, $t5		            # $t2 = $t2 + $t5
 
-    add			$t2, $t2, $s7		    # $t2 = $t2 + $s7 (display address)
+    add			$t2, $t2, $s7		            # $t2 = $t2 + $s7 (display address)
 
-    lw			$s0, 16($sp)
-    lw			$s1, 12($sp)
-    lw			$s2, 8($sp)
-    lw			$s3, 4($sp)
     lw			$ra, 0($sp)
-    addi		$sp, $sp, 20			# $sp += 20
+    addi		$sp, $sp, 4			            # $sp += 4
 
-    move 		$v0, $t2			    # $v0 = $t2
-    jr			$ra					    # jump to $ra
+    move 		$v0, $t2			            # $v0 = $t2
+    jr			$ra					            # jump to $ra
 
 # END FUN calc_display_address
