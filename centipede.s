@@ -88,7 +88,7 @@ game_loop_main:
     # Centipede
     move 		$a0, $s0			        # $a0 = $s0
     jal			control_centipede			# jump to control_centipede and save position to $ra
-    
+
     # Temporaries
     lw			$a0, blasterLocation		# 
     jal			draw_blaster				# jump to draw_blaster and save position to $ra
@@ -279,11 +279,8 @@ move_centipede_segment:
     mcs_reach_border:
     # --- Check if we are now in the pesonal space for bug blaster
     lw			$t4, personalSpaceStartRow			# $t4 = personalSpaceStartRow
-    # Personal space start location = start row * 3 * screenPixelUnits (/$t0)
-    addi		$t5, $zero, 3			            # $t5 = $zero + 3
-    mult	    $t5, $t4			                # $t5 * $t4 = Hi and Lo registers
-    mflo	    $t5					                # copy Lo to $t5
-    mult	    $t5, $t0			                # $t5 * $t0 = Hi and Lo registers
+    # Personal space start location = start row * screenPixelUnits (/$t0)
+    mult	    $t4, $t0			                # $t5 * $t0 = Hi and Lo registers
     mflo	    $t5					                # copy Lo to $t5
     bgt			$a0, $t5, mcs_reach_personal_space	# if $a0 > $t5 then mcs_reach_personal_space
 
