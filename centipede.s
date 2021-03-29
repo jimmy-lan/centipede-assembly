@@ -46,7 +46,7 @@
     # Objects
     centipedeLocations: .word 0, 1, 2, 3, 4, 5, 6, 7, 8, 9
     centipedeLocationEmpty: .word -1     # Location value to indicate a "dead" centipede segment
-    centipedeDirections: .word 1, 1, 1, 1, 1, 1, 1, 1, 1, 1     # 1: goes right, -1: goes left
+    centipedeDirections: .word 1:10     # 1: goes right, -1: goes left
     centipedeLength: .word 10
     centipedeFramesPerMove: .word 4    # Number of frames per movement of the centipede
     blasterLocation: .word 1207
@@ -510,12 +510,64 @@ sleep:
 
 # END FUN sleep
 
+# FUN object_to_display_grid_location
+# ARGS:
+# $a0: position in object grid.
+# RETURN $v0: position in display grid.
+object_to_display_grid_location:
+    addi		$sp, $sp, -20			    # $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    # Move parameters
+    move 		$s0, $a0			        # $s0 = $a0
+
+    # Load constants
+    lw			$t0, screenPixelUnits		# $t0 = screenPixelUnits
+    
+    # Calculate number of rows to be scaled ($t2)
+    div			$s0, $t0			        # $s0 / $t0
+    mflo	    $t2					        # $t2 = floor($s0 / $t0) 
+    mfhi        $t3                         # $t3 = $s0 mod $t0
+    
+    # Number of rows to be scaled * number of pixel units per row * scaling factor (3)
+    mult	    $t2, $t0			        # $t2 * $t0 = Hi and Lo registers
+    mflo	    $t2					        # copy Lo to $t2
+    
+    addi		$t1, $zero, 3			    # $t1 = $zero + 3
+    mult	    $t2, $t1			        # $t2 * $t1 = Hi and Lo registers
+    mflo	    $t2					        # copy Lo to $t2
+    
+    # Add remainder
+    add			$t2, $t2, $t3		        # $t2 = $t2 + $t3
+
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			    # $sp += 20
+
+    move 		$v0, $t2			        # $v0 = $t2
+    jr			$ra					        # jump to $ra
+
+# END FUN object_to_display_grid_location
+
 # FUN calc_display_address
 # ARGS:
 # $a0: position
+# $a1: grid type that `position`($a0) is measured in.
+#      0 - object grid, 1 - display grid.
 # RETURN $v0: display address to be used
 calc_display_address:
-    addi		$sp, $sp, -4		# $sp -= 4
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
     sw			$ra, 0($sp)
 
     move 		$t2, $a0			# $t2 = $a0
@@ -544,8 +596,12 @@ calc_display_address:
 
     add			$t2, $t2, $s7		    # $t2 = $t2 + $s7 (display address)
 
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
     lw			$ra, 0($sp)
-    addi		$sp, $sp, 4			    # $sp += 4
+    addi		$sp, $sp, 20			# $sp += 20
 
     move 		$v0, $t2			    # $v0 = $t2
     jr			$ra					    # jump to $ra
