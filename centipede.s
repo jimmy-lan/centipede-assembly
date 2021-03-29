@@ -49,7 +49,8 @@
     centipedeDirections: .word 1:10     # 1: goes right, -1: goes left
     centipedeLength: .word 10
     centipedeFramesPerMove: .word 4    # Number of frames per movement of the centipede
-    blasterLocation: .word 410
+    mushrooms: .word 0:399             # Mushrooms will only exist in the first 19 rows (19 * 21)
+    blasterLocation: .word 410 
 
     # Personal Space for Bug Blaster
     personalSpaceStartRow: .word 17
