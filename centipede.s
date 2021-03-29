@@ -41,6 +41,7 @@
     backgroundColor: .word 0x00000000
     centipedeColor: .word 0x00f7a634
     centipedeHeadColor: .word 0x00e09b3a
+    mushroomColor: .word 0x0076c0d6
     blasterColor: .word 0x00ffffff
 
     # Objects
@@ -440,9 +441,6 @@ draw_blaster:
     addi		$sp, $sp, -4			# $sp -= 4
     sw			$ra, 0($sp)
 
-    addi		$t2, $a0, 0			    # load location to draw blaster to $t2
-
-    move 		$a0, $t2			    # $a0 = $t2
     move 		$a1, $zero			    # $a1 = $zero
     jal			calc_display_address	# jump to calc_display_address and save position to $ra
     move 		$t2, $v0			    # $t2 = $v0
@@ -476,6 +474,56 @@ draw_blaster:
     jr			$ra					    # jump to $ra
 
 # END FUN draw_blaster
+
+# FUN draw_mushroom_at_location
+# ARGS:
+# $a0: position to draw (object grid)
+# RETURN $v0: 0
+draw_mushroom_at_location:
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    move 		$a1, $zero			    # $a1 = $zero
+    jal			calc_display_address	# jump to calc_display_address and save position to $ra
+    move 		$t2, $v0			    # $t2 = $v0
+
+    lw			$t0, mushroomColor		# $t0 = mushroomColor
+    lw			$t1, screenLineWidth	# $t1 = screenLineWidth
+    lw			$t9, backgroundColor	# $t9 = backgroundColor
+
+    # Draw mushroom
+    # First line
+    sw			$t0, 0($t2)
+    sw			$t0, 4($t2)
+    sw			$t0, 8($t2)
+
+    # Second line
+    add 		$t2, $t2, $t1			# $t2 = $t2 + $t1, goes to the next line at this location
+    sw			$t0, 0($t2)
+    sw			$t0, 4($t2)
+    sw			$t0, 8($t2)
+
+    # Third line
+    add 		$t2, $t2, $t1			# $t2 = $t2 + $t1, goes to the next line at this location
+    sw			$t0, 0($t2)
+    sw			$t9, 4($t2)
+    sw			$t0, 8($t2)
+
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+
+    move 		$v0, $zero			# $v0 = $zero
+    jr			$ra					# jump to $ra
+
+# END FUN draw_mushroom_at_location
 
 ##############################################
 # # Utilities
