@@ -566,8 +566,10 @@ calc_display_address:
     addi		$sp, $sp, -4			        # $sp -= 4
     sw			$ra, 0($sp)
 
+    # Check for grid system: convert to display grid if possible.
     bne			$a1, $zero, cda_display_grid	# if $a1 != $zero then cda_display_grid
-    
+    jal			object_to_display_grid_location # jump to object_to_display_grid_location and save position to $ra
+    move 		$a0, $v0			            # $a0 = $v0
     
     cda_display_grid:
     move 		$t2, $a0			            # $t2 = $a0
