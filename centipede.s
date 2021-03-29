@@ -49,7 +49,7 @@
     centipedeDirections: .word 1:10     # 1: goes right, -1: goes left
     centipedeLength: .word 10
     centipedeFramesPerMove: .word 4    # Number of frames per movement of the centipede
-    blasterLocation: .word 1207
+    blasterLocation: .word 410
 
     # Personal Space for Bug Blaster
     personalSpaceStartRow: .word 17
@@ -88,7 +88,7 @@ game_loop_main:
     # Centipede
     move 		$a0, $s0			        # $a0 = $s0
     jal			control_centipede			# jump to control_centipede and save position to $ra
-
+    
     # Temporaries
     lw			$a0, blasterLocation		# 
     jal			draw_blaster				# jump to draw_blaster and save position to $ra
@@ -251,12 +251,6 @@ move_centipede_segment:
     lw			$t0, screenPixelUnits
     subi		$t1, $t0, 1		                    # $t1 = $t0 - 1, the column number for the edge
     
-    # $t7 stores screenPixelUnits * 3, which is the amount of pixel locations
-    # to be added when we move the centipede to the next line.
-    addi		$t2, $zero, 3			            # $t2 = 3, multiplication factor for row
-    mult	    $t0, $t2			                # $t0 * $t2 = Hi and Lo registers
-    mflo	    $t7					                # copy Lo to $t7
-    
     # --- Identify if the centipede is about to hit the border
     # Check the column # at which the centipede segment is currently located
     div			$a0, $t0			                # $a0 / $t0
@@ -295,10 +289,10 @@ move_centipede_segment:
 
     # --- END Check if we are now in the pesonal space for bug blaster
     
-    add 		$v0, $a0, $t7			            # $v0 = $a0 + $t7, goes down one row
+    add 		$v0, $a0, $t0			            # $v0 = $a0 + $t0, goes down one row
     j			end_mcs				                # jump to end_mcs
     mcs_reach_personal_space:
-    sub 		$v0, $a0, $t7			            # $v0 = $a0 - $t7, goes up one row
+    sub 		$v0, $a0, $t0			            # $v0 = $a0 - $t0, goes up one row
     j			end_mcs				                # jump to end_mcs
     
     mcs_direction_end_if:
@@ -347,10 +341,12 @@ draw_centipede:
     sw			$ra, 0($sp)
 
     move 		$s0, $a0			                    # $s0 = $a0
+    move 		$s1, $a1			                    # $s1 = $a1
+    move 		$s2, $a2			                    # $s2 = $a2
 
     draw_centipede_loop:
-        lw			$a0, 0($a1)			                # load current segment to draw
-        addi		$a2, $a2, -1			            # decrement loop counter
+        lw			$a0, 0($s1)			                # load current segment to draw
+        addi		$s2, $s2, -1			            # decrement loop counter
 
         # If the centipede segment is marked "dead", then skip draw
         lw			$t0, centipedeLocationEmpty     	# $t0 = centipedeLocationEmpty
@@ -366,8 +362,8 @@ draw_centipede:
         dc_is_drawing:
         
         # Color the head of centipede with a different color
-        beq			$a2, $zero, dc_load_head_color	    # if we reach the end of array, then this is a head
-        lw			$t1, 4($a1)			                # load the next element in the location array
+        beq			$s2, $zero, dc_load_head_color	    # if we reach the end of array, then this is a head
+        lw			$t1, 4($s1)			                # load the next element in the location array
         beq			$t1, $t0, dc_load_head_color	    # if the next segment is marked "dead", then this is a head
         
         dc_load_segment_color:
@@ -382,8 +378,8 @@ draw_centipede:
         
         dc_skip_draw_segment:
 
-        addi 		$a1, $a1, 4			                # increment index to next element
-        bgt			$a2, $zero, draw_centipede_loop	    # if $a2 > $zero then draw_centipede_loop
+        addi 		$s1, $s1, 4			                # increment index to next element
+        bgt			$s2, $zero, draw_centipede_loop	    # if $a2 > $zero then draw_centipede_loop
         
     lw			$s0, 16($sp)
     lw			$s1, 12($sp)
@@ -399,12 +395,13 @@ draw_centipede:
 
 # FUN draw_centipede_segment
 # ARGS:
-# $a0: Location of centipede. Should be a number from 0 to screenPixelUnits.
+# $a0: Location of centipede (object grid)
 # $a3: Color of this segment
 draw_centipede_segment:
     addi		$sp, $sp, -4			    # $sp -= 4
     sw			$ra, 0($sp)
     
+    move 		$a1, $zero			        # $a1 = $zero
     jal			calc_display_address	    # jump to calc_display_address and save position to $ra
     move 		$t2, $v0			        # $t2 = $v0
     
@@ -440,7 +437,7 @@ draw_centipede_segment:
 
 # FUN draw_blaster
 # ARGS:
-# $a0: location of bug blaster
+# $a0: location of bug blaster (object grid)
 draw_blaster:
     addi		$sp, $sp, -4			# $sp -= 4
     sw			$ra, 0($sp)
@@ -448,6 +445,7 @@ draw_blaster:
     addi		$t2, $a0, 0			    # load location to draw blaster to $t2
 
     move 		$a0, $t2			    # $a0 = $t2
+    move 		$a1, $zero			    # $a1 = $zero
     jal			calc_display_address	# jump to calc_display_address and save position to $ra
     move 		$t2, $v0			    # $t2 = $v0
 
