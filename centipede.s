@@ -77,7 +77,7 @@ main:
     # Init mushrooms (Temporary)
     la		    $t0, mushrooms		        # 
     addi		$t1, $zero, 1			    # $t1 = $zero + 1
-    sw			$t1, 160($t0)			    # 
+    sw			$t1, 240($t0)			    # 
 
 ##############################################
 # # Game Loop
@@ -183,6 +183,41 @@ control_centipede:
     jr			$ra					    # jump to $ra
 
 # END FUN control_centipede
+
+# FUN generate_mushrooms
+# Generate and populate the "mushrooms" array based on "mushroomLength"
+# ARGS:
+# $a0: number of mushrooms to generate
+# $a1: highest "lives" of a mushroom (see definition)
+# RETURN $v0: 0
+generate_mushrooms:
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    move 		$s0, $a0			    # $s0 = number of mushrooms to generate
+    move 		$s1, $a1			    # $s1 = highest "lives" per mushroom
+
+    generate_mushroom_loop:
+        
+
+        subi		$s0, $s0, 1			                # $s0 = $s0 - 1
+        bne			$s0, $zero, generate_mushroom_loop	# if $s0 != $zero then generate_mushroom_loop
+
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+
+    move 		$v0, $zero			    # $v0 = $zero
+    jr			$ra					    # jump to $ra
+
+# END FUN generate_mushrooms
 
 ##############################################
 # # Logics
