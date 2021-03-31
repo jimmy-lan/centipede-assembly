@@ -57,7 +57,7 @@
     blasterLocation: .word 410 
 
     # Personal Space for Bug Blaster
-    personalSpaceStartRow: .word 17
+    personalSpaceStartRow: .word 18
 
     newline: .asciiz "\n"
 
@@ -366,8 +366,32 @@ move_centipede_segment:
     
     # --- END Identify if the centipede is about to hit the border
 
-    # TODO Identify if the centipede is about to hit a mushroom
+    # --- Identify if the centipede is about to hit a mushroom
+    # Check if there is a mushroom infront of the centipede
+    add			$t0, $a0, $a3		                # $t0 = $a0 + $a3, next location
+    # Multiply by 4 to access mushroom array
+    addi		$t1, $zero, 4			            # $t1 = $zero + 4
+    mult	    $t0, $t1			                # $t0 * $t1 = Hi and Lo registers
+    mflo	    $t9					                # copy Lo to $t9
+    # Check and branch if there is mushroom infront of the centipede
+    lw			$t1, mushrooms($t9)			        # 
+    beq			$t1, $zero, mcs_mushroom_end    	# if $t1 == $zero then mcs_mushroom_end
+    
+    # Go to the next line and change direction
+    lw			$t0, screenPixelUnits			    # 
+    add 		$v0, $a0, $t0			            # $v0 = $a0 + $t0
+    beq			$a1, $s1, mcs_mushroom_goes_left	# if $a1 == $s1 then mcs_mushroom_goes_left
+    mcs_mushroom_goes_right:
+    move 		$v1, $s1			                # $v1 = direction left
+    j			mcs_mushroom_end_if				    # jump to mcs_mushroom_end_if
+    
+    mcs_mushroom_goes_left:
+    move 		$v1, $s0			                # $v1 = direction right
+    
+    mcs_mushroom_end_if:
+    j			end_mcs				                # jump to end_mcs
 
+    mcs_mushroom_end:
     # --- END Identify if the centipede is about to hit a mushroom
 
     # If none of the above turning conditions are met
