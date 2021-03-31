@@ -41,20 +41,25 @@
     backgroundColor: .word 0x00000000
     centipedeColor: .word 0x00f7a634
     centipedeHeadColor: .word 0x00e09b3a
+    mushroomColor: .word 0x0076c0d6
     blasterColor: .word 0x00ffffff
 
     # Objects
     centipedeLocations: .word 0, 1, 2, 3, 4, 5, 6, 7, 8, 9
     centipedeLocationEmpty: .word -1     # Location value to indicate a "dead" centipede segment
-    centipedeDirections: .word 1, 1, 1, 1, 1, 1, 1, 1, 1, 1     # 1: goes right, -1: goes left
+    centipedeDirections: .word 1:10     # 1: goes right, -1: goes left
     centipedeLength: .word 10
     centipedeFramesPerMove: .word 4    # Number of frames per movement of the centipede
-    blasterLocation: .word 1207
+    mushrooms: .word 0:399             # Mushrooms will only exist in the first 19 rows (19 * 21)
+    mushroomLength: .word 399
+    mushroomLives: .word 3             # Number of times that a mushroom needs to be blasted before going away
+    mushroomInitQuantity: .word 15     # Initial number of mushrooms to be generated on the screen
+    blasterLocation: .word 410 
 
     # Personal Space for Bug Blaster
     personalSpaceStartRow: .word 17
 
-    sampleString: .asciiz "a\n"
+    newline: .asciiz "\n"
 
 .globl main
 .text
@@ -69,8 +74,12 @@
 
 main:
     # Load values
-    lw			$s7, displayAddress			#
+    lw			$s7, displayAddress			        #
     
+    # Initialize mushrooms
+    lw			$a0, mushroomInitQuantity			# Number of mushrooms to generate
+    lw			$a1, mushroomLives			        # Number of "lives" per mushroom
+    jal			generate_mushrooms				    # jump to generate_mushrooms and save position to $ra
 
 ##############################################
 # # Game Loop
@@ -86,12 +95,17 @@ reset_frame:
 
 game_loop_main:
     # Centipede
+    la 		    $a0, mushrooms			    # $a0 = mushrooms
+    lw			$a1, mushroomLength			# 
+    jal			draw_mushrooms				# jump to draw_mushrooms and save position to $ra
     move 		$a0, $s0			        # $a0 = $s0
     jal			control_centipede			# jump to control_centipede and save position to $ra
 
-    # Temporaries
+    # --- Temporaries
     lw			$a0, blasterLocation		# 
     jal			draw_blaster				# jump to draw_blaster and save position to $ra
+
+    # --- END Temporaries
     
     # Frame control
     jal			sleep				        # jump to sleep and save position to $ra
@@ -172,6 +186,62 @@ control_centipede:
 
 # END FUN control_centipede
 
+# FUN generate_mushrooms
+# Generate and populate the "mushrooms" array based on "mushroomLength"
+# ARGS:
+# $a0: number of mushrooms to generate
+# $a1: highest "lives" of a mushroom (see definition)
+generate_mushrooms:
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    # Move parameters
+    move 		$s0, $a0			    # $s0 = number of mushrooms to generate
+    move 		$s1, $a1			    # $s1 = highest "lives" per mushroom
+
+    # Data values
+    lw			$s3, mushroomLength		# $t1 = mushroomLength
+    subi		$s3, $s3, 1			    # $t1 = $t1 - 1
+    
+    generate_mushroom_loop:
+        # Generate random position for the mushroom
+        # Random number from 0 to (mushroomLength - 1)
+        li			$v0, 42				                # use service 42 to generate random numbers
+        li			$a0, 0				                # $a0 = 0
+        move		$a1, $s3				            # $a1 = $s3
+        syscall
+        
+        move 		$t0, $a0			                # $t0 = random number generated
+        # Multiply $t0 by 4 to get the location in mushroom array
+        addi		$t1, $zero, 4			            # $t1 = $zero + 4
+        mult	    $t0, $t1			                # $t0 * $t1 = Hi and Lo registers
+        mflo	    $t0					                # copy Lo to $t0
+
+        # If there exists a mushroom at this location, then skip saving the mushroom
+        lw			$t9, mushrooms($t0)			        
+        bne			$t9, $zero, gml_skip            	# if $t9 != $zero then gml_skip
+        sw			$s1, mushrooms($t0)			        # Save highest "lives" per mushroom into the location
+
+        gml_skip:
+        subi		$s0, $s0, 1			                # $s0 = $s0 - 1
+        bne			$s0, $zero, generate_mushroom_loop	# if $s0 != $zero then generate_mushroom_loop
+
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+
+    move 		$v0, $zero			    # $v0 = $zero
+    jr			$ra					    # jump to $ra
+
+# END FUN generate_mushrooms
+
 ##############################################
 # # Logics
 ##############################################
@@ -251,12 +321,6 @@ move_centipede_segment:
     lw			$t0, screenPixelUnits
     subi		$t1, $t0, 1		                    # $t1 = $t0 - 1, the column number for the edge
     
-    # $t7 stores screenPixelUnits * 3, which is the amount of pixel locations
-    # to be added when we move the centipede to the next line.
-    addi		$t2, $zero, 3			            # $t2 = 3, multiplication factor for row
-    mult	    $t0, $t2			                # $t0 * $t2 = Hi and Lo registers
-    mflo	    $t7					                # copy Lo to $t7
-    
     # --- Identify if the centipede is about to hit the border
     # Check the column # at which the centipede segment is currently located
     div			$a0, $t0			                # $a0 / $t0
@@ -285,20 +349,17 @@ move_centipede_segment:
     mcs_reach_border:
     # --- Check if we are now in the pesonal space for bug blaster
     lw			$t4, personalSpaceStartRow			# $t4 = personalSpaceStartRow
-    # Personal space start location = start row * 3 * screenPixelUnits (/$t0)
-    addi		$t5, $zero, 3			            # $t5 = $zero + 3
-    mult	    $t5, $t4			                # $t5 * $t4 = Hi and Lo registers
-    mflo	    $t5					                # copy Lo to $t5
-    mult	    $t5, $t0			                # $t5 * $t0 = Hi and Lo registers
+    # Personal space start location = start row * screenPixelUnits (/$t0)
+    mult	    $t4, $t0			                # $t5 * $t0 = Hi and Lo registers
     mflo	    $t5					                # copy Lo to $t5
     bgt			$a0, $t5, mcs_reach_personal_space	# if $a0 > $t5 then mcs_reach_personal_space
 
     # --- END Check if we are now in the pesonal space for bug blaster
     
-    add 		$v0, $a0, $t7			            # $v0 = $a0 + $t7, goes down one row
+    add 		$v0, $a0, $t0			            # $v0 = $a0 + $t0, goes down one row
     j			end_mcs				                # jump to end_mcs
     mcs_reach_personal_space:
-    sub 		$v0, $a0, $t7			            # $v0 = $a0 - $t7, goes up one row
+    sub 		$v0, $a0, $t0			            # $v0 = $a0 - $t0, goes up one row
     j			end_mcs				                # jump to end_mcs
     
     mcs_direction_end_if:
@@ -347,10 +408,12 @@ draw_centipede:
     sw			$ra, 0($sp)
 
     move 		$s0, $a0			                    # $s0 = $a0
+    move 		$s1, $a1			                    # $s1 = $a1
+    move 		$s2, $a2			                    # $s2 = $a2
 
     draw_centipede_loop:
-        lw			$a0, 0($a1)			                # load current segment to draw
-        addi		$a2, $a2, -1			            # decrement loop counter
+        lw			$a0, 0($s1)			                # load current segment to draw
+        addi		$s2, $s2, -1			            # decrement loop counter
 
         # If the centipede segment is marked "dead", then skip draw
         lw			$t0, centipedeLocationEmpty     	# $t0 = centipedeLocationEmpty
@@ -366,8 +429,8 @@ draw_centipede:
         dc_is_drawing:
         
         # Color the head of centipede with a different color
-        beq			$a2, $zero, dc_load_head_color	    # if we reach the end of array, then this is a head
-        lw			$t1, 4($a1)			                # load the next element in the location array
+        beq			$s2, $zero, dc_load_head_color	    # if we reach the end of array, then this is a head
+        lw			$t1, 4($s1)			                # load the next element in the location array
         beq			$t1, $t0, dc_load_head_color	    # if the next segment is marked "dead", then this is a head
         
         dc_load_segment_color:
@@ -382,8 +445,8 @@ draw_centipede:
         
         dc_skip_draw_segment:
 
-        addi 		$a1, $a1, 4			                # increment index to next element
-        bgt			$a2, $zero, draw_centipede_loop	    # if $a2 > $zero then draw_centipede_loop
+        addi 		$s1, $s1, 4			                # increment index to next element
+        bgt			$s2, $zero, draw_centipede_loop	    # if $a2 > $zero then draw_centipede_loop
         
     lw			$s0, 16($sp)
     lw			$s1, 12($sp)
@@ -399,12 +462,13 @@ draw_centipede:
 
 # FUN draw_centipede_segment
 # ARGS:
-# $a0: Location of centipede. Should be a number from 0 to screenPixelUnits.
+# $a0: Location of centipede (object grid)
 # $a3: Color of this segment
 draw_centipede_segment:
     addi		$sp, $sp, -4			    # $sp -= 4
     sw			$ra, 0($sp)
     
+    move 		$a1, $zero			        # $a1 = $zero
     jal			calc_display_address	    # jump to calc_display_address and save position to $ra
     move 		$t2, $v0			        # $t2 = $v0
     
@@ -440,14 +504,12 @@ draw_centipede_segment:
 
 # FUN draw_blaster
 # ARGS:
-# $a0: location of bug blaster
+# $a0: location of bug blaster (object grid)
 draw_blaster:
     addi		$sp, $sp, -4			# $sp -= 4
     sw			$ra, 0($sp)
 
-    addi		$t2, $a0, 0			    # load location to draw blaster to $t2
-
-    move 		$a0, $t2			    # $a0 = $t2
+    move 		$a1, $zero			    # $a1 = $zero
     jal			calc_display_address	# jump to calc_display_address and save position to $ra
     move 		$t2, $v0			    # $t2 = $v0
 
@@ -481,6 +543,89 @@ draw_blaster:
 
 # END FUN draw_blaster
 
+# FUN draw_mushrooms
+# ARGS:
+# $a0: address of array storing all mushrooms
+# $a1: length of the mushroom array
+draw_mushrooms:
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    move 		$s0, $a0			    # $s0 = mushrooms array address
+    move 		$s1, $a1			    # $s1 = length of mushrooms
+
+    move 		$s2, $zero			    # $s2 = 0, counter for current mushroom index
+
+    draw_mushrooms_loop:
+        lw			$a0, 0($s0)			                # load current mushroom to draw
+        # Do not draw if the mushroom entry is 0
+        beq			$a0, $zero, dmr_skip_draw	        # if $a0 == $zero then dmr_skip_draw
+        
+        move 		$a0, $s2			                # $a0 = $s2
+        jal			draw_mushroom_at_location			# jump to draw_mushroom_at_location and save position to $ra
+
+        dmr_skip_draw:
+        addi 		$s0, $s0, 4			                # increment index to next mushroom
+        addi		$s2, $s2, 1			                # $s2 = $s2 + 1
+        blt			$s2, $s1, draw_mushrooms_loop	    # if $s2 < $s1 then draw_mushrooms_loop
+
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20		    # $sp += 20
+
+    move 		$v0, $zero			    # $v0 = $zero
+    jr			$ra					    # jump to $ra
+
+# END FUN draw_mushrooms
+
+# FUN draw_mushroom_at_location
+# ARGS:
+# $a0: position to draw (object grid)
+draw_mushroom_at_location:
+    addi		$sp, $sp, -4			# $sp -= 4
+    sw			$ra, 0($sp)
+
+    move 		$a1, $zero			    # $a1 = $zero
+    jal			calc_display_address	# jump to calc_display_address and save position to $ra
+    move 		$t2, $v0			    # $t2 = $v0
+
+    lw			$t0, mushroomColor		# $t0 = mushroomColor
+    lw			$t1, screenLineWidth	# $t1 = screenLineWidth
+    lw			$t9, backgroundColor	# $t9 = backgroundColor
+
+    # Draw mushroom
+    # First line
+    sw			$t0, 0($t2)
+    sw			$t0, 4($t2)
+    sw			$t0, 8($t2)
+
+    # Second line
+    add 		$t2, $t2, $t1			# $t2 = $t2 + $t1, goes to the next line at this location
+    sw			$t0, 0($t2)
+    sw			$t0, 4($t2)
+    sw			$t0, 8($t2)
+
+    # Third line
+    add 		$t2, $t2, $t1			# $t2 = $t2 + $t1, goes to the next line at this location
+    sw			$t9, 0($t2)
+    sw			$t0, 4($t2)
+    sw			$t9, 8($t2)
+
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 4			    # $sp += 4
+
+    move 		$v0, $zero			    # $v0 = $zero
+    jr			$ra					    # jump to $ra
+
+# END FUN draw_mushroom_at_location
+
 ##############################################
 # # Utilities
 ##############################################
@@ -510,44 +655,98 @@ sleep:
 
 # END FUN sleep
 
+# FUN object_to_display_grid_location
+# ARGS:
+# $a0: position in object grid.
+# RETURN $v0: position in display grid.
+object_to_display_grid_location:
+    addi		$sp, $sp, -20			    # $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    # Move parameters
+    move 		$s0, $a0			        # $s0 = $a0
+
+    # Load constants
+    lw			$t0, screenPixelUnits		# $t0 = screenPixelUnits
+    
+    # Calculate number of rows to be scaled ($t2)
+    div			$s0, $t0			        # $s0 / $t0
+    mflo	    $t2					        # $t2 = floor($s0 / $t0) 
+    mfhi        $t3                         # $t3 = $s0 mod $t0
+    
+    # Number of rows to be scaled * number of pixel units per row * scaling factor (3)
+    mult	    $t2, $t0			        # $t2 * $t0 = Hi and Lo registers
+    mflo	    $t2					        # copy Lo to $t2
+    
+    addi		$t1, $zero, 3			    # $t1 = $zero + 3
+    mult	    $t2, $t1			        # $t2 * $t1 = Hi and Lo registers
+    mflo	    $t2					        # copy Lo to $t2
+    
+    # Add remainder
+    add			$t2, $t2, $t3		        # $t2 = $t2 + $t3
+
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			    # $sp += 20
+
+    move 		$v0, $t2			        # $v0 = $t2
+    jr			$ra					        # jump to $ra
+
+# END FUN object_to_display_grid_location
+
 # FUN calc_display_address
 # ARGS:
 # $a0: position
+# $a1: grid type that `position`($a0) is measured in.
+#      0 - object grid, 1 - display grid.
 # RETURN $v0: display address to be used
 calc_display_address:
-    addi		$sp, $sp, -4		# $sp -= 4
+    addi		$sp, $sp, -4			        # $sp -= 4
     sw			$ra, 0($sp)
 
-    move 		$t2, $a0			# $t2 = $a0
+    # Check for grid system: convert to display grid if possible.
+    bne			$a1, $zero, cda_display_grid	# if $a1 != $zero then cda_display_grid
+    jal			object_to_display_grid_location # jump to object_to_display_grid_location and save position to $ra
+    move 		$a0, $v0			            # $a0 = $v0
+    
+    cda_display_grid:
+    move 		$t2, $a0			            # $t2 = $a0
     lw			$t1, screenPixelUnits			
     lw			$t4, screenLineUnusedWidth 
 
     # Calculate actual display address
     # Multiply $t2 by unit width
-    lw			$t3, unitWidth			# Load width per "unit" to $t3
-    mult	    $t2, $t3			    # $t2 * $t3 (unit width) = Hi and Lo registers
-    mflo	    $t2					    # copy Lo to $t2
+    lw			$t3, unitWidth			        # Load width per "unit" to $t3
+    mult	    $t2, $t3			            # $t2 * $t3 (unit width) = Hi and Lo registers
+    mflo	    $t2					            # copy Lo to $t2
 
     # Since we do not use "screenLineUnusedWidth" pixels per line, 
     # we need to account for these values in for accurate positioning.
     
-    move 		$t6, $a0		    	# $t6 = $a0
+    move 		$t6, $a0		    	        # $t6 = $a0
 
     # $t5 stores the number of previous lines that we should account for
-    div			$t6, $t1			    # $t6 / $t1
-    mflo	    $t5					    # $t5 = floor($t2 / $t1)
+    div			$t6, $t1			            # $t6 / $t1
+    mflo	    $t5					            # $t5 = floor($t2 / $t1)
     
     # We will therefore add $t5 * $t4 (unused pixels for every line) to $t2.
-    mult	    $t5, $t4			    # $t5 * $t4 = Hi and Lo registers
-    mflo	    $t5					    # copy Lo to $t5
-    add			$t2, $t2, $t5		    # $t2 = $t2 + $t5
+    mult	    $t5, $t4			            # $t5 * $t4 = Hi and Lo registers
+    mflo	    $t5					            # copy Lo to $t5
+    add			$t2, $t2, $t5		            # $t2 = $t2 + $t5
 
-    add			$t2, $t2, $s7		    # $t2 = $t2 + $s7 (display address)
+    add			$t2, $t2, $s7		            # $t2 = $t2 + $s7 (display address)
 
     lw			$ra, 0($sp)
-    addi		$sp, $sp, 4			    # $sp += 4
+    addi		$sp, $sp, 4			            # $sp += 4
 
-    move 		$v0, $t2			    # $v0 = $t2
-    jr			$ra					    # jump to $ra
+    move 		$v0, $t2			            # $v0 = $t2
+    jr			$ra					            # jump to $ra
 
 # END FUN calc_display_address
