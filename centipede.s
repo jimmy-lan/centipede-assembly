@@ -53,7 +53,7 @@
     mushrooms: .word 0:399             # Mushrooms will only exist in the first 19 rows (19 * 21)
     mushroomLength: .word 399
     mushroomLives: .word 3             # Number of times that a mushroom needs to be blasted before going away
-    mushroomInitQuantity: .word 100     # Initial number of mushrooms to be generated on the screen
+    mushroomInitQuantity: .word 15     # Initial number of mushrooms to be generated on the screen
     blasterLocation: .word 410 
 
     # Personal Space for Bug Blaster
@@ -199,9 +199,11 @@ generate_mushrooms:
     sw			$s3, 4($sp)
     sw			$ra, 0($sp)
 
+    # Move parameters
     move 		$s0, $a0			    # $s0 = number of mushrooms to generate
     move 		$s1, $a1			    # $s1 = highest "lives" per mushroom
 
+    # Data values
     lw			$s3, mushroomLength		# $t1 = mushroomLength
     subi		$s3, $s3, 1			    # $t1 = $t1 - 1
     
@@ -210,7 +212,7 @@ generate_mushrooms:
         # Random number from 0 to (mushroomLength - 1)
         li			$v0, 42				                # use service 42 to generate random numbers
         li			$a0, 0				                # $a0 = 0
-        move		$a1, $s3				            # $a1 = $s1
+        move		$a1, $s3				            # $a1 = $s3
         syscall
         
         move 		$t0, $a0			                # $t0 = random number generated
@@ -219,14 +221,6 @@ generate_mushrooms:
         mult	    $t0, $t1			                # $t0 * $t1 = Hi and Lo registers
         mflo	    $t0					                # copy Lo to $t0
 
-        move		$a0, $t0			# $a0 = $t0
-        li			$v0, 1				# syscall print int
-        syscall							# execute
-
-        la			$a0, newline		# $a0 = newline
-        li			$v0, 4				# syscall print str
-        syscall							# execute
-        
         # If there exists a mushroom at this location, then skip saving the mushroom
         lw			$t9, mushrooms($t0)			        
         bne			$t9, $zero, gml_skip            	# if $t9 != $zero then gml_skip
@@ -561,23 +555,23 @@ draw_mushrooms:
     sw			$s3, 4($sp)
     sw			$ra, 0($sp)
 
-    move 		$s0, $a0			    # $s0 = $a0
-    move 		$s1, $a1			    # $s1 = $a1
+    move 		$s0, $a0			    # $s0 = mushrooms array address
+    move 		$s1, $a1			    # $s1 = length of mushrooms
 
-    move 		$t1, $zero			    # $t1 = $zero
+    move 		$s2, $zero			    # $s2 = 0, counter for current mushroom index
 
     draw_mushrooms_loop:
         lw			$a0, 0($s0)			                # load current mushroom to draw
         # Do not draw if the mushroom entry is 0
         beq			$a0, $zero, dmr_skip_draw	        # if $a0 == $zero then dmr_skip_draw
         
-        move 		$a0, $t1			                # $a0 = $t1
+        move 		$a0, $s2			                # $a0 = $s2
         jal			draw_mushroom_at_location			# jump to draw_mushroom_at_location and save position to $ra
 
         dmr_skip_draw:
         addi 		$s0, $s0, 4			                # increment index to next mushroom
-        addi		$t1, $t1, 1			                # $t1 = $t1 + 1
-        blt			$t1, $s1, draw_mushrooms_loop	    # if $t1 < $s1 then draw_mushrooms_loop
+        addi		$s2, $s2, 1			                # $s2 = $s2 + 1
+        blt			$s2, $s1, draw_mushrooms_loop	    # if $s2 < $s1 then draw_mushrooms_loop
 
     lw			$s0, 16($sp)
     lw			$s1, 12($sp)
