@@ -52,12 +52,14 @@
     centipedeFramesPerMove: .word 4    # Number of frames per movement of the centipede
     mushrooms: .word 0:399             # Mushrooms will only exist in the first 19 rows (19 * 21)
     mushroomLength: .word 399
+    mushroomLives: .word 3             # Number of times that a mushroom needs to be blasted before going away
+    mushroomInitQuantity: .word 100     # Initial number of mushrooms to be generated on the screen
     blasterLocation: .word 410 
 
     # Personal Space for Bug Blaster
     personalSpaceStartRow: .word 17
 
-    sampleString: .asciiz "a\n"
+    newline: .asciiz "\n"
 
 .globl main
 .text
@@ -72,12 +74,12 @@
 
 main:
     # Load values
-    lw			$s7, displayAddress			#
+    lw			$s7, displayAddress			        #
     
-    # Init mushrooms (Temporary)
-    la		    $t0, mushrooms		        # 
-    addi		$t1, $zero, 1			    # $t1 = $zero + 1
-    sw			$t1, 240($t0)			    # 
+    # Initialize mushrooms
+    lw			$a0, mushroomInitQuantity			# Number of mushrooms to generate
+    lw			$a1, mushroomLives			        # Number of "lives" per mushroom
+    jal			generate_mushrooms				    # jump to generate_mushrooms and save position to $ra
 
 ##############################################
 # # Game Loop
@@ -189,7 +191,6 @@ control_centipede:
 # ARGS:
 # $a0: number of mushrooms to generate
 # $a1: highest "lives" of a mushroom (see definition)
-# RETURN $v0: 0
 generate_mushrooms:
     addi		$sp, $sp, -20			# $sp -= 20
     sw			$s0, 16($sp)
@@ -201,22 +202,37 @@ generate_mushrooms:
     move 		$s0, $a0			    # $s0 = number of mushrooms to generate
     move 		$s1, $a1			    # $s1 = highest "lives" per mushroom
 
-    li			$v0, 42				    # use service 42 to generate random numbers
-    lw			$t1, mushroomLength		# $t1 = mushroomLength
-    subi		$t1, $t1, 1			    # $t1 = $t1 - 1
+    lw			$s3, mushroomLength		# $t1 = mushroomLength
+    subi		$s3, $s3, 1			    # $t1 = $t1 - 1
     
     generate_mushroom_loop:
         # Generate random position for the mushroom
         # Random number from 0 to (mushroomLength - 1)
+        li			$v0, 42				                # use service 42 to generate random numbers
         li			$a0, 0				                # $a0 = 0
-        move		$a1, $t1				            # $a1 = $s1
+        move		$a1, $s3				            # $a1 = $s1
         syscall
+        
         move 		$t0, $a0			                # $t0 = random number generated
-        # If there exists a mushroom at this location, then redo the process
+        # Multiply $t0 by 4 to get the location in mushroom array
+        addi		$t1, $zero, 4			            # $t1 = $zero + 4
+        mult	    $t0, $t1			                # $t0 * $t1 = Hi and Lo registers
+        mflo	    $t0					                # copy Lo to $t0
+
+        move		$a0, $t0			# $a0 = $t0
+        li			$v0, 1				# syscall print int
+        syscall							# execute
+
+        la			$a0, newline		# $a0 = newline
+        li			$v0, 4				# syscall print str
+        syscall							# execute
+        
+        # If there exists a mushroom at this location, then skip saving the mushroom
         lw			$t9, mushrooms($t0)			        
-        bne			$t9, $zero, generate_mushroom_loop	# if $t9 != $zero then generate_mushroom_loop
+        bne			$t9, $zero, gml_skip            	# if $t9 != $zero then gml_skip
         sw			$s1, mushrooms($t0)			        # Save highest "lives" per mushroom into the location
 
+        gml_skip:
         subi		$s0, $s0, 1			                # $s0 = $s0 - 1
         bne			$s0, $zero, generate_mushroom_loop	# if $s0 != $zero then generate_mushroom_loop
 
