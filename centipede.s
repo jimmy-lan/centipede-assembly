@@ -201,8 +201,21 @@ generate_mushrooms:
     move 		$s0, $a0			    # $s0 = number of mushrooms to generate
     move 		$s1, $a1			    # $s1 = highest "lives" per mushroom
 
+    li			$v0, 42				    # use service 42 to generate random numbers
+    lw			$t1, mushroomLength		# $t1 = mushroomLength
+    subi		$t1, $t1, 1			    # $t1 = $t1 - 1
+    
     generate_mushroom_loop:
-        
+        # Generate random position for the mushroom
+        # Random number from 0 to (mushroomLength - 1)
+        li			$a0, 0				                # $a0 = 0
+        move		$a1, $t1				            # $a1 = $s1
+        syscall
+        move 		$t0, $a0			                # $t0 = random number generated
+        # If there exists a mushroom at this location, then redo the process
+        lw			$t9, mushrooms($t0)			        
+        bne			$t9, $zero, generate_mushroom_loop	# if $t9 != $zero then generate_mushroom_loop
+        sw			$s1, mushrooms($t0)			        # Save highest "lives" per mushroom into the location
 
         subi		$s0, $s0, 1			                # $s0 = $s0 - 1
         bne			$s0, $zero, generate_mushroom_loop	# if $s0 != $zero then generate_mushroom_loop
