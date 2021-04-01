@@ -102,9 +102,8 @@ game_loop_main:
     move 		$a0, $s0			        # $a0 = $s0
     jal			control_centipede			# jump to control_centipede and save position to $ra
 
-    # --- Temporaries
-    lw			$a0, blasterLocation		# 
-    jal			draw_blaster				# jump to draw_blaster and save position to $ra
+    # Bug blaster
+    jal			control_blaster				# jump to control_blaster and save position to $ra
 
     # --- END Temporaries
     
@@ -278,7 +277,6 @@ move_blaster_by_keystroke:
     lw			$ra, 0($sp)
     addi		$sp, $sp, 20			    # $sp += 20
 
-    move 		$v0, $zero			        # $v0 = $zero
     jr			$ra					        # jump to $ra
 
 # END FUN move_blaster_by_keystroke
