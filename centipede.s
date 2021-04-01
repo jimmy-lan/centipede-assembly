@@ -259,10 +259,12 @@ move_blaster_by_keystroke:
     beq			$t9, 0x73, mbbk_handle_s	# if $t9 == 0x53 then mbbk_handle_s
 
     j			mbbk_key_handle_end			# jump to mbbk_key_handle_end
-    
+
     # --- Handle movement keys
     mbbk_handle_j:
+        # Prevent the bug blaster from exiting the left border
         subi		$v0, $s0, 1			        # $v0 = $s0 - 1
+        mbbk_handle_j_end:
         j			mbbk_key_handle_end		    # jump to mbbk_key_handle_end
     mbbk_handle_k:
         addi		$v0, $s0, 1			        # $v0 = $s0 + 1
@@ -941,3 +943,40 @@ calc_display_address:
     jr			$ra					            # jump to $ra
 
 # END FUN calc_display_address
+
+# FUN calc_coordinates
+# ARGS:
+# $a0: current location (object/display grid)
+# RETURN 
+# $v0: current row
+# $v1: current column
+calc_coordinates:
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    # Load parameters
+    move 		$s0, $a0			    # $s0 = current location
+
+    # Load constants
+    lw			$s1, screenPixelUnits   # $s1 = screenPixelUnits
+
+    # Calculate current row and column
+    div			$s0, $s1			# $s0 / $s1
+    mflo	    $v0					# $v0 = floor($s0 / $s1) 
+    mfhi	    $v1					# $v1 = $s0 mod $s1 
+
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+
+    move 		$v0, $zero			    # $v0 = $zero
+    jr			$ra					    # jump to $ra
+
+# END FUN calc_coordinates
