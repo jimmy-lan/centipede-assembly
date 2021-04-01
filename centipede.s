@@ -198,11 +198,16 @@ control_blaster:
 
     lw			$s0, blasterLocation			    # load current bug blaster location
 
-    # Identify the next state of the bug blaster
+    # Remove bug blaster from the old location
+    move 		$a0, $s0			                # $a0 = $s0
+    jal			fill_background_at_location			# jump to fill_background_at_location and save position to $ra
+
+    # Calculate the next state of the bug blaster
     move 		$a0, $s0			                # $a0 = $s0
     jal			move_blaster_by_keystroke		    # jump to move_blaster_by_keystroke and save position to $ra
     sw			$v0, blasterLocation			    # save new bug blaster location
     
+    # Draw bug blaster at the new location
     move 		$a0, $v0			                # $a0 = $v0
     jal			draw_blaster				        # jump to draw_blaster and save position to $ra
 
@@ -252,6 +257,8 @@ move_blaster_by_keystroke:
     beq			$t9, 0x6B, mbbk_handle_k	# if $t9 == 0x6B then mbbk_handle_k
     beq			$t9, 0x77, mbbk_handle_w	# if $t9 == 0x57 then mbbk_handle_w
     beq			$t9, 0x73, mbbk_handle_s	# if $t9 == 0x53 then mbbk_handle_s
+
+    j			mbbk_key_handle_end			# jump to mbbk_key_handle_end
     
     # --- Handle movement keys
     mbbk_handle_j:
@@ -678,7 +685,7 @@ draw_blaster:
 # FUN fill_background
 # ARGS:
 # $a0: location to fill background (object grid)
-fill_background:
+fill_background_at_location:
     addi		$sp, $sp, -20			    # $sp -= 20
     sw			$s0, 16($sp)
     sw			$s1, 12($sp)
