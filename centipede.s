@@ -271,23 +271,38 @@ move_blaster_by_keystroke:
 
     # --- Handle movement keys
     mbbk_handle_j:
-        # Prevent the bug blaster from exiting the left border
+        # Prevent bug blaster from exiting the left border
         beq			$s3, $zero, mbbk_default_return	# if $s3 == $zero then mbbk_default_return
         subi		$v0, $s0, 1			            # $v0 = $s0 - 1
         mbbk_handle_j_end:
         j			mbbk_key_handle_end		        # jump to mbbk_key_handle_end
     mbbk_handle_k:
-        # Prevent the bug blaster from exiting the right border
+        # Prevent bug blaster from exiting the right border
         subi		$t0, $s1, 1			            # $t0 = $s1 - 1
         beq			$s3, $t0, mbbk_handle_k_end	    # if $s3 == $t0 then mbbk_handle_k_end
         addi		$v0, $s0, 1			            # $v0 = $s0 + 1
         mbbk_handle_k_end:
         j			mbbk_key_handle_end		        # jump to mbbk_key_handle_end
     mbbk_handle_w:
+        # Prevent bug blaster from leaving personal space
+        lw			$t0, personalSpaceStart			# $t0 = personalSpaceStart
         sub		    $v0, $s0, $s1			        # $v0 = $s0 - $s1
+        bgt			$v0, $t0, mbbk_handle_w_end 	# if currently in personal space
+
+        mbbk_left_personal_space_w:
+        move 		$v0, $s0			            # revert location
+
+        mbbk_handle_w_end:
         j			mbbk_key_handle_end		        # jump to mbbk_key_handle_end
     mbbk_handle_s:
+        lw			$t0, personalSpaceEnd			# $t0 = personalSpaceEnd
         add			$v0, $s0, $s1		            # $v0 = $s0 + $s1
+        bgt			$t0, $v0, mbbk_handle_s_end 	# if currently in personal space
+
+        mbbk_left_personal_space_s:
+        move 		$v0, $s0			            # revert location
+        
+        mbbk_handle_s_end:
         j			mbbk_key_handle_end		        # jump to mbbk_key_handle_end
     mbbk_key_handle_end:
     # --- END Handle movement keys
