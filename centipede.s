@@ -238,17 +238,28 @@ move_blaster_by_keystroke:
     # Check if key is pressed
     lw          $t9, 0xffff0000             # load key-press indicator
 	bne         $t9, 1, mbbk_end            # if key is not pressed, end the function
-    lw			$t9, 0xffff0004			    # load key identifier
 
+    # Check type of key being pressed
+    lw			$t9, 0xffff0004			    # load key identifier
+    beq			$t9, 0x6A, mbbk_handle_j	# if $t9 == 0x6A then mbbk_handle_j
+    beq			$t9, 0x6B, mbbk_handle_k	# if $t9 == 0x6B then mbbk_handle_k
+    beq			$t9, 0x77, mbbk_handle_w	# if $t9 == 0x57 then mbbk_handle_w
+    beq			$t9, 0x73, mbbk_handle_s	# if $t9 == 0x53 then mbbk_handle_s
+    
     # --- Handle movement keys
     mbbk_handle_j:
         subi		$v0, $s0, 1			        # $v0 = $s0 - 1
+        j			mbbk_key_handle_end		    # jump to mbbk_key_handle_end
     mbbk_handle_k:
         addi		$v0, $s0, 1			        # $v0 = $s0 + 1
+        j			mbbk_key_handle_end		    # jump to mbbk_key_handle_end
     mbbk_handle_w:
         sub		    $v0, $s0, $s1			    # $v0 = $s0 - $s1
+        j			mbbk_key_handle_end		    # jump to mbbk_key_handle_end
     mbbk_handle_s:
         add			$v0, $s0, $s1		        # $v0 = $s0 + $s1
+        j			mbbk_key_handle_end		    # jump to mbbk_key_handle_end
+    mbbk_key_handle_end:
     # --- END Handle movement keys
 
     mbbk_end:
