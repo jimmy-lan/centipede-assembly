@@ -49,15 +49,16 @@
     centipedeLocationEmpty: .word -1     # Location value to indicate a "dead" centipede segment
     centipedeDirections: .word 1:10     # 1: goes right, -1: goes left
     centipedeLength: .word 10
-    centipedeFramesPerMove: .word 4    # Number of frames per movement of the centipede
+    centipedeFramesPerMove: .word 1    # Number of frames per movement of the centipede
     mushrooms: .word 0:399             # Mushrooms will only exist in the first 19 rows (19 * 21)
     mushroomLength: .word 399
     mushroomLives: .word 3             # Number of times that a mushroom needs to be blasted before going away
-    mushroomInitQuantity: .word 15     # Initial number of mushrooms to be generated on the screen
+    mushroomInitQuantity: .word 10     # Initial number of mushrooms to be generated on the screen
     blasterLocation: .word 410 
 
     # Personal Space for Bug Blaster
-    personalSpaceStartRow: .word 17
+    personalSpaceStart: .word 399
+    personalSpaceEnd: .word 441
 
     newline: .asciiz "\n"
 
@@ -216,6 +217,11 @@ generate_mushrooms:
         syscall
         
         move 		$t0, $a0			                # $t0 = random number generated
+
+        # If the generated mushroom is in the first row, then skip adding this mushroom
+        lw			$t1, screenPixelUnits			    # 
+        blt			$t0, $t1, gml_skip	                # if $t0 < $t1 then gml_skip
+
         # Multiply $t0 by 4 to get the location in mushroom array
         addi		$t1, $zero, 4			            # $t1 = $zero + 4
         mult	    $t0, $t1			                # $t0 * $t1 = Hi and Lo registers
@@ -307,9 +313,13 @@ move_centipede_segment:
     sw			$s3, 4($sp)
     sw			$ra, 0($sp)
 
+    # Load parameters
+    move 		$s0, $a0			                # $s0 = current location of the centipede
+    move 		$s1, $a3			                # $s1 = current direction that the centipede is moving along
+
     # Check if the current location is empty
     lw			$t5, centipedeLocationEmpty			# $t5 = centipedeLocationEmpty
-    bne			$a0, $t5, mcs_main	                # if $a0 != $t5 then mcs_main
+    bne			$s0, $t5, mcs_main	                # if $a0 != $t5 then mcs_main
 
     # If location is empty, then do not do anything
     move 		$v0, $t5			                # $v0 = $t5
@@ -318,56 +328,87 @@ move_centipede_segment:
     
     mcs_main:
     # Main idea: continue the current direction if "turning conditions" are not met
-    lw			$t0, screenPixelUnits
-    subi		$t1, $t0, 1		                    # $t1 = $t0 - 1, the column number for the edge
+    lw			$s2, screenPixelUnits
+
+    # --- Identify if the centipede is in personal space
+    lw			$t5, personalSpaceStart			    # $t4 = personalSpaceStart
+    li			$s3, 0				                # $s3 = 0, a boolean value indicating whether we are in personal space
+    ble			$s0, $t5, mcs_space_end    	        # if $s0 <= $t5 then mcs_space_end
+
+    mcs_personal_space:
+    li			$s3, 1				                # $s3 = 1
     
+    mcs_space_end:
+    # --- END Identify if the centipede is in personal space
+
     # --- Identify if the centipede is about to hit the border
-    # Check the column # at which the centipede segment is currently located
-    div			$a0, $t0			                # $a0 / $t0
-    mfhi	    $t3					                # $t3 = $a0 mod $t0, stores the current column num.
+    subi		$t0, $s2, 1		                    # $t0 = $s2 - 1, the column number for the edge
+    # Store the current column number in $t3
+    div			$a0, $s2			                # $a0 / $s2
+    mfhi	    $t3					                # $t3 = $a0 mod $s2, stores the current column num.
 
     # Load definitions
-    addi		$s0, $zero, 1			            # $s0 = 1, the right direction indicator
-    addi		$s1, $zero, -1			            # $s1 = -1, the left direction indicator
+    addi		$t1, $zero, 1			            # $t1 = 1, the right direction indicator
+    addi		$t2, $zero, -1			            # $t2 = -1, the left direction indicator
     
-    beq			$a3, $s0, mcs_goes_right	        # if $a3 == $s0 then mcs_goes_right
-    mcs_goes_left:
-    bne			$t3, $zero, mcs_direction_end_if    # if $t3 != $zero then mcs_direction_end_if
+    beq			$s1, $t1, mcs_border_goes_right	    # if $s1 == $t1 then mcs_border_goes_right
+    mcs_border_goes_left:
+    bne			$t3, $zero, mcs_border_end_if       # if $t3 != $zero then mcs_border_end_if
 
     # If the column number is 0, then the next direction should change to 1 (i.e., goes to right).
-    move 		$v1, $s0			                # $v1 = $s1, set next direction to right
+    move 		$v1, $t1			                # $v1 = $t1, set next direction to right
     
     j			mcs_reach_border	                # jump to mcs_reach_border
-    mcs_goes_right:
-    bne			$t3, $t1, mcs_direction_end_if	    # if $t3 != $t1 then msc_direction_end_if
+    mcs_border_goes_right:
+    bne			$t3, $t0, mcs_border_end_if	        # if $t3 != $t0 then mcs_border_end_if
     
     # If the column number corresponds to the right edge, then the next direction should change
     # to -1 (i.e., goes to left).
-    move 		$v1, $s1			                # $v1 = $s1, set next direction to left
+    move 		$v1, $t2			                # $v1 = $t2, set next direction to left
     
     j			mcs_reach_border				    # jump to mcs_reach_border
     mcs_reach_border:
     # --- Check if we are now in the pesonal space for bug blaster
-    lw			$t4, personalSpaceStartRow			# $t4 = personalSpaceStartRow
-    # Personal space start location = start row * screenPixelUnits (/$t0)
-    mult	    $t4, $t0			                # $t5 * $t0 = Hi and Lo registers
-    mflo	    $t5					                # copy Lo to $t5
-    bgt			$a0, $t5, mcs_reach_personal_space	# if $a0 > $t5 then mcs_reach_personal_space
+    bne			$s3, $zero, mcs_border_personal_space    # if $s3 != $zero then mcs_border_personal_space
 
     # --- END Check if we are now in the pesonal space for bug blaster
     
-    add 		$v0, $a0, $t0			            # $v0 = $a0 + $t0, goes down one row
+    add 		$v0, $s0, $s2			            # $v0 = $s0 + $s2, goes down one row
     j			end_mcs				                # jump to end_mcs
-    mcs_reach_personal_space:
-    sub 		$v0, $a0, $t0			            # $v0 = $a0 - $t0, goes up one row
+    mcs_border_personal_space:
+    sub 		$v0, $s0, $s2			            # $v0 = $s0 - $s2, goes up one row
     j			end_mcs				                # jump to end_mcs
     
-    mcs_direction_end_if:
-    
+    mcs_border_end_if:
     # --- END Identify if the centipede is about to hit the border
 
-    # TODO Identify if the centipede is about to hit a mushroom
+    # --- Identify if the centipede is about to hit a mushroom
+    # Do not check for mushrooms if the centipede is in personal space
+    bne			$s3, $zero, mcs_mushroom_end	    # if $s3 != $zero then mcs_mushroom_end
+    
+    # Check if there is a mushroom infront of the centipede
+    add			$t0, $s0, $s1		                # $t0 = $s0 + $s1, next location
+    # Multiply by 4 to access mushroom array
+    addi		$t1, $zero, 4			            # $t1 = $zero + 4
+    mult	    $t0, $t1			                # $t0 * $t1 = Hi and Lo registers
+    mflo	    $t9					                # copy Lo to $t9
+    # Check and branch if there is mushroom infront of the centipede
+    lw			$t1, mushrooms($t9)			        # 
+    beq			$t1, $zero, mcs_mushroom_end    	# if $t1 == $zero then mcs_mushroom_end
+    
+    # Go to the next line and change direction	    # 
+    addi		$t0, $zero, -1			            # $t0 = direction left
+    add 		$v0, $s0, $s2			            # $v0 = $s0 + $s2, goes to the next line
+    beq			$s1, $t0, mcs_mushroom_goes_left	# if $s1 == $t0 then mcs_mushroom_goes_left
+    mcs_mushroom_goes_right:
+    li 		    $v1, -1 			                # $v1 = direction left
+    j			end_mcs				                # jump to end_mcs
+    
+    mcs_mushroom_goes_left:
+    li 		    $v1, 1  			                # $v1 = direction right
+    j			end_mcs				                # jump to end_mcs
 
+    mcs_mushroom_end:
     # --- END Identify if the centipede is about to hit a mushroom
 
     # If none of the above turning conditions are met
