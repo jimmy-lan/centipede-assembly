@@ -244,11 +244,11 @@ move_blaster_by_keystroke:
 
     # Load parameters
     move 		$s0, $a0			        # $s0 = current blaster location
-    move 		$v0, $a0			        # $v0 = current blaster location
     lw			$s1, screenPixelUnits		# $s1 = screenPixelUnits
 
     # Check if key is pressed
     lw          $t9, 0xffff0000             # load key-press indicator
+    move 		$v0, $s0			        # $v0 = current blaster location, default return
 	bne         $t9, 1, mbbk_end            # if key is not pressed, end the function
 
     # Obtain current coordinate
@@ -264,17 +264,24 @@ move_blaster_by_keystroke:
     beq			$t9, 0x77, mbbk_handle_w	# if $t9 == 0x57 then mbbk_handle_w
     beq			$t9, 0x73, mbbk_handle_s	# if $t9 == 0x53 then mbbk_handle_s
 
+    # Produce default return
+    mbbk_default_return:
+    move 		$v0, $s0			        # $v0 = current blaster location, default return
     j			mbbk_key_handle_end			# jump to mbbk_key_handle_end
 
     # --- Handle movement keys
     mbbk_handle_j:
         # Prevent the bug blaster from exiting the left border
-        beq			$s3, $zero, mbbk_handle_j_end	# if $s3 == $zero then mbbk_handle_j_end
+        beq			$s3, $zero, mbbk_default_return	# if $s3 == $zero then mbbk_default_return
         subi		$v0, $s0, 1			            # $v0 = $s0 - 1
         mbbk_handle_j_end:
         j			mbbk_key_handle_end		        # jump to mbbk_key_handle_end
     mbbk_handle_k:
+        # Prevent the bug blaster from exiting the right border
+        subi		$t0, $s1, 1			            # $t0 = $s1 - 1
+        beq			$s3, $t0, mbbk_handle_k_end	    # if $s3 == $t0 then mbbk_handle_k_end
         addi		$v0, $s0, 1			            # $v0 = $s0 + 1
+        mbbk_handle_k_end:
         j			mbbk_key_handle_end		        # jump to mbbk_key_handle_end
     mbbk_handle_w:
         sub		    $v0, $s0, $s1			        # $v0 = $s0 - $s1
