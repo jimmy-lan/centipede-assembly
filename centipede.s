@@ -57,7 +57,8 @@
     blasterLocation: .word 410 
 
     # Personal Space for Bug Blaster
-    personalSpaceStartRow: .word 19
+    personalSpaceStart: .word 399
+    personalSpaceEnd: .word 441
 
     newline: .asciiz "\n"
 
@@ -330,10 +331,7 @@ move_centipede_segment:
     lw			$s2, screenPixelUnits
 
     # --- Identify if the centipede is in personal space
-    lw			$t4, personalSpaceStartRow			# $t4 = personalSpaceStartRow
-    # Personal space start location = start row * screenPixelUnits ($s2)
-    mult	    $t4, $s2			                # $t5 * $s2 = Hi and Lo registers
-    mflo	    $t5					                # copy Lo to $t5
+    lw			$t5, personalSpaceStart			    # $t4 = personalSpaceStart
     li			$s3, 0				                # $s3 = 0, a boolean value indicating whether we are in personal space
     ble			$s0, $t5, mcs_space_end    	        # if $s0 <= $t5 then mcs_space_end
 
