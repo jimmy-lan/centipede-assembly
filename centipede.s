@@ -187,6 +187,33 @@ control_centipede:
 
 # END FUN control_centipede
 
+# FUN control_blaster
+# ARGS:
+control_blaster:
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    
+
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+
+    move 		$v0, $zero			    # $v0 = $zero
+    jr			$ra					    # jump to $ra
+
+# END FUN control_blaster
+
+##############################################
+# # Logics
+##############################################
 # FUN generate_mushrooms
 # Generate and populate the "mushrooms" array based on "mushroomLength"
 # ARGS:
@@ -248,9 +275,6 @@ generate_mushrooms:
 
 # END FUN generate_mushrooms
 
-##############################################
-# # Logics
-##############################################
 # FUN move_centipede
 # - Given the current state of centipede, calculate the next
 # - state and store the info back to the arrays.
