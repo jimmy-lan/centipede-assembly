@@ -190,24 +190,32 @@ control_centipede:
 # FUN control_blaster
 # ARGS:
 control_blaster:
-    addi		$sp, $sp, -20			# $sp -= 20
+    addi		$sp, $sp, -20			            # $sp -= 20
     sw			$s0, 16($sp)
     sw			$s1, 12($sp)
     sw			$s2, 8($sp)
     sw			$s3, 4($sp)
     sw			$ra, 0($sp)
 
+    lw			$s0, blasterLocation			    # load current bug blaster location
+
+    # Identify the next state of the bug blaster
+    move 		$a0, $s0			                # $a0 = $s0
+    jal			move_blaster_by_keystroke		    # jump to move_blaster_by_keystroke and save position to $ra
+    sw			$v0, blasterLocation			    # save new bug blaster location
     
+    move 		$a0, $v0			                # $a0 = $v0
+    jal			draw_blaster				        # jump to draw_blaster and save position to $ra
 
     lw			$s0, 16($sp)
     lw			$s1, 12($sp)
     lw			$s2, 8($sp)
     lw			$s3, 4($sp)
     lw			$ra, 0($sp)
-    addi		$sp, $sp, 20			# $sp += 20
+    addi		$sp, $sp, 20			            # $sp += 20
 
-    move 		$v0, $zero			    # $v0 = $zero
-    jr			$ra					    # jump to $ra
+    move 		$v0, $zero			                # $v0 = $zero
+    jr			$ra					                # jump to $ra
 
 # END FUN control_blaster
 
