@@ -279,7 +279,7 @@ move_blaster_by_keystroke:
     mbbk_handle_k:
         # Prevent bug blaster from exiting the right border
         subi		$t0, $s1, 1			            # $t0 = $s1 - 1
-        beq			$s3, $t0, mbbk_handle_k_end	    # if $s3 == $t0 then mbbk_handle_k_end
+        beq			$s3, $t0, mbbk_default_return	# if $s3 == $t0 then mbbk_default_return
         addi		$v0, $s0, 1			            # $v0 = $s0 + 1
         mbbk_handle_k_end:
         j			mbbk_key_handle_end		        # jump to mbbk_key_handle_end
@@ -301,7 +301,7 @@ move_blaster_by_keystroke:
 
         mbbk_left_personal_space_s:
         move 		$v0, $s0			            # revert location
-        
+
         mbbk_handle_s_end:
         j			mbbk_key_handle_end		        # jump to mbbk_key_handle_end
     mbbk_key_handle_end:
