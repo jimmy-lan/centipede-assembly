@@ -251,6 +251,12 @@ move_blaster_by_keystroke:
     lw          $t9, 0xffff0000             # load key-press indicator
 	bne         $t9, 1, mbbk_end            # if key is not pressed, end the function
 
+    # Obtain current coordinate
+    move 		$a0, $s0			        # $a0 = current blaster location
+    jal			calc_coordinate				# jump to calc_coordinate and save position to $ra
+    move 		$s2, $v0			        # $s2 = current row
+    move 		$s3, $v1			        # $s3 = current col
+
     # Check type of key being pressed
     lw			$t9, 0xffff0004			    # load key identifier
     beq			$t9, 0x6A, mbbk_handle_j	# if $t9 == 0x6A then mbbk_handle_j
@@ -263,18 +269,19 @@ move_blaster_by_keystroke:
     # --- Handle movement keys
     mbbk_handle_j:
         # Prevent the bug blaster from exiting the left border
-        subi		$v0, $s0, 1			        # $v0 = $s0 - 1
+        beq			$s3, $zero, mbbk_handle_j_end	# if $s3 == $zero then mbbk_handle_j_end
+        subi		$v0, $s0, 1			            # $v0 = $s0 - 1
         mbbk_handle_j_end:
-        j			mbbk_key_handle_end		    # jump to mbbk_key_handle_end
+        j			mbbk_key_handle_end		        # jump to mbbk_key_handle_end
     mbbk_handle_k:
-        addi		$v0, $s0, 1			        # $v0 = $s0 + 1
-        j			mbbk_key_handle_end		    # jump to mbbk_key_handle_end
+        addi		$v0, $s0, 1			            # $v0 = $s0 + 1
+        j			mbbk_key_handle_end		        # jump to mbbk_key_handle_end
     mbbk_handle_w:
-        sub		    $v0, $s0, $s1			    # $v0 = $s0 - $s1
-        j			mbbk_key_handle_end		    # jump to mbbk_key_handle_end
+        sub		    $v0, $s0, $s1			        # $v0 = $s0 - $s1
+        j			mbbk_key_handle_end		        # jump to mbbk_key_handle_end
     mbbk_handle_s:
-        add			$v0, $s0, $s1		        # $v0 = $s0 + $s1
-        j			mbbk_key_handle_end		    # jump to mbbk_key_handle_end
+        add			$v0, $s0, $s1		            # $v0 = $s0 + $s1
+        j			mbbk_key_handle_end		        # jump to mbbk_key_handle_end
     mbbk_key_handle_end:
     # --- END Handle movement keys
 
@@ -950,7 +957,7 @@ calc_display_address:
 # RETURN 
 # $v0: current row
 # $v1: current column
-calc_coordinates:
+calc_coordinate:
     addi		$sp, $sp, -20			# $sp -= 20
     sw			$s0, 16($sp)
     sw			$s1, 12($sp)
@@ -976,7 +983,6 @@ calc_coordinates:
     lw			$ra, 0($sp)
     addi		$sp, $sp, 20			# $sp += 20
 
-    move 		$v0, $zero			    # $v0 = $zero
     jr			$ra					    # jump to $ra
 
 # END FUN calc_coordinates
