@@ -216,6 +216,11 @@ generate_mushrooms:
         syscall
         
         move 		$t0, $a0			                # $t0 = random number generated
+
+        # If the generated mushroom is in the first row, then skip adding this mushroom
+        lw			$t1, screenPixelUnits			    # 
+        blt			$t0, $t1, gml_skip	                # if $t0 < $t1 then gml_skip
+
         # Multiply $t0 by 4 to get the location in mushroom array
         addi		$t1, $zero, 4			            # $t1 = $zero + 4
         mult	    $t0, $t1			                # $t0 * $t1 = Hi and Lo registers
