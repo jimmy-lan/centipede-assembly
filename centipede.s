@@ -214,6 +214,56 @@ control_blaster:
 ##############################################
 # # Logics
 ##############################################
+# FUN move_blaster_by_keystroke
+# - "j": move left
+# - "k": move right
+# - "w": move up
+# - "s": move down
+# ARGS:
+# $a0: current blaster location
+# RETURN $v0: new location of blaster
+move_blaster_by_keystroke:
+    addi		$sp, $sp, -20			    # $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    # Load parameters
+    move 		$s0, $a0			        # $s0 = current blaster location
+    move 		$v0, $a0			        # $v0 = current blaster location
+    lw			$s1, screenPixelUnits		# $s1 = screenPixelUnits
+
+    # Check if key is pressed
+    lw          $t9, 0xffff0000             # load key-press indicator
+	bne         $t9, 1, mbbk_end            # if key is not pressed, end the function
+    lw			$t9, 0xffff0004			    # load key identifier
+
+    # --- Handle movement keys
+    mbbk_handle_j:
+        subi		$v0, $s0, 1			        # $v0 = $s0 - 1
+    mbbk_handle_k:
+        addi		$v0, $s0, 1			        # $v0 = $s0 + 1
+    mbbk_handle_w:
+        sub		    $v0, $s0, $s1			    # $v0 = $s0 - $s1
+    mbbk_handle_s:
+        add			$v0, $s0, $s1		        # $v0 = $s0 + $s1
+    # --- END Handle movement keys
+
+    mbbk_end:
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			    # $sp += 20
+
+    move 		$v0, $zero			        # $v0 = $zero
+    jr			$ra					        # jump to $ra
+
+# END FUN move_blaster_by_keystroke
+
 # FUN generate_mushrooms
 # Generate and populate the "mushrooms" array based on "mushroomLength"
 # ARGS:
