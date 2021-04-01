@@ -232,7 +232,7 @@ control_blaster:
 # - "w": move up
 # - "s": move down
 # ARGS:
-# $a0: current blaster location
+# $a0: current blaster location (object grid)
 # RETURN $v0: new location of blaster
 move_blaster_by_keystroke:
     addi		$sp, $sp, -20			    # $sp -= 20
@@ -847,6 +847,34 @@ draw_mushroom_at_location:
     jr			$ra					    # jump to $ra
 
 # END FUN draw_mushroom_at_location
+
+# FUN draw_dart
+# ARGS:
+# $a0: location (display grid)
+# $a1: dart color
+draw_dart:
+    addi		$sp, $sp, -20			    # $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    # Load parameters
+    move 		$s0, $a0			        # $s0 = $a0
+    move 		$s1, $a1			        # $s1 = $a1
+
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			    # $sp += 20
+
+    move 		$v0, $zero			        # $v0 = $zero
+    jr			$ra					        # jump to $ra
+
+# END FUN draw_dart
 
 ##############################################
 # # Utilities
