@@ -102,9 +102,8 @@ game_loop_main:
     move 		$a0, $s0			        # $a0 = $s0
     jal			control_centipede			# jump to control_centipede and save position to $ra
 
-    # --- Temporaries
-    lw			$a0, blasterLocation		# 
-    jal			draw_blaster				# jump to draw_blaster and save position to $ra
+    # Bug blaster
+    jal			control_blaster				# jump to control_blaster and save position to $ra
 
     # --- END Temporaries
     
@@ -190,30 +189,136 @@ control_centipede:
 # FUN control_blaster
 # ARGS:
 control_blaster:
-    addi		$sp, $sp, -20			# $sp -= 20
+    addi		$sp, $sp, -20			            # $sp -= 20
     sw			$s0, 16($sp)
     sw			$s1, 12($sp)
     sw			$s2, 8($sp)
     sw			$s3, 4($sp)
     sw			$ra, 0($sp)
 
+    lw			$s0, blasterLocation			    # load current bug blaster location
+
+    # Remove bug blaster from the old location
+    move 		$a0, $s0			                # $a0 = $s0
+    jal			fill_background_at_location			# jump to fill_background_at_location and save position to $ra
+
+    # Calculate the next state of the bug blaster
+    move 		$a0, $s0			                # $a0 = $s0
+    jal			move_blaster_by_keystroke		    # jump to move_blaster_by_keystroke and save position to $ra
+    sw			$v0, blasterLocation			    # save new bug blaster location
     
+    # Draw bug blaster at the new location
+    move 		$a0, $v0			                # $a0 = $v0
+    jal			draw_blaster				        # jump to draw_blaster and save position to $ra
 
     lw			$s0, 16($sp)
     lw			$s1, 12($sp)
     lw			$s2, 8($sp)
     lw			$s3, 4($sp)
     lw			$ra, 0($sp)
-    addi		$sp, $sp, 20			# $sp += 20
+    addi		$sp, $sp, 20			            # $sp += 20
 
-    move 		$v0, $zero			    # $v0 = $zero
-    jr			$ra					    # jump to $ra
+    move 		$v0, $zero			                # $v0 = $zero
+    jr			$ra					                # jump to $ra
 
 # END FUN control_blaster
 
 ##############################################
 # # Logics
 ##############################################
+# FUN move_blaster_by_keystroke
+# - "j": move left
+# - "k": move right
+# - "w": move up
+# - "s": move down
+# ARGS:
+# $a0: current blaster location
+# RETURN $v0: new location of blaster
+move_blaster_by_keystroke:
+    addi		$sp, $sp, -20			    # $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    # Load parameters
+    move 		$s0, $a0			        # $s0 = current blaster location
+    lw			$s1, screenPixelUnits		# $s1 = screenPixelUnits
+
+    # Check if key is pressed
+    lw          $t9, 0xffff0000             # load key-press indicator
+    move 		$v0, $s0			        # $v0 = current blaster location, default return
+	bne         $t9, 1, mbbk_end            # if key is not pressed, end the function
+
+    # Obtain current coordinate
+    move 		$a0, $s0			        # $a0 = current blaster location
+    jal			calc_coordinate				# jump to calc_coordinate and save position to $ra
+    move 		$s2, $v0			        # $s2 = current row
+    move 		$s3, $v1			        # $s3 = current col
+
+    # Check type of key being pressed
+    lw			$t9, 0xffff0004			    # load key identifier
+    beq			$t9, 0x6A, mbbk_handle_j	# if $t9 == 0x6A then mbbk_handle_j
+    beq			$t9, 0x6B, mbbk_handle_k	# if $t9 == 0x6B then mbbk_handle_k
+    beq			$t9, 0x77, mbbk_handle_w	# if $t9 == 0x57 then mbbk_handle_w
+    beq			$t9, 0x73, mbbk_handle_s	# if $t9 == 0x53 then mbbk_handle_s
+
+    # Produce default return
+    mbbk_default_return:
+    move 		$v0, $s0			        # $v0 = current blaster location, default return
+    j			mbbk_key_handle_end			# jump to mbbk_key_handle_end
+
+    # --- Handle movement keys
+    mbbk_handle_j:
+        # Prevent bug blaster from exiting the left border
+        beq			$s3, $zero, mbbk_default_return	# if $s3 == $zero then mbbk_default_return
+        subi		$v0, $s0, 1			            # $v0 = $s0 - 1
+        mbbk_handle_j_end:
+        j			mbbk_key_handle_end		        # jump to mbbk_key_handle_end
+    mbbk_handle_k:
+        # Prevent bug blaster from exiting the right border
+        subi		$t0, $s1, 1			            # $t0 = $s1 - 1
+        beq			$s3, $t0, mbbk_default_return	# if $s3 == $t0 then mbbk_default_return
+        addi		$v0, $s0, 1			            # $v0 = $s0 + 1
+        mbbk_handle_k_end:
+        j			mbbk_key_handle_end		        # jump to mbbk_key_handle_end
+    mbbk_handle_w:
+        # Prevent bug blaster from leaving personal space
+        lw			$t0, personalSpaceStart			# $t0 = personalSpaceStart
+        sub		    $v0, $s0, $s1			        # $v0 = $s0 - $s1
+        bge			$v0, $t0, mbbk_handle_w_end 	# if currently in personal space
+
+        mbbk_left_personal_space_w:
+        move 		$v0, $s0			            # revert location
+
+        mbbk_handle_w_end:
+        j			mbbk_key_handle_end		        # jump to mbbk_key_handle_end
+    mbbk_handle_s:
+        lw			$t0, personalSpaceEnd			# $t0 = personalSpaceEnd
+        add			$v0, $s0, $s1		            # $v0 = $s0 + $s1
+        bgt			$t0, $v0, mbbk_handle_s_end 	# if currently in personal space
+
+        mbbk_left_personal_space_s:
+        move 		$v0, $s0			            # revert location
+
+        mbbk_handle_s_end:
+        j			mbbk_key_handle_end		        # jump to mbbk_key_handle_end
+    mbbk_key_handle_end:
+    # --- END Handle movement keys
+
+    mbbk_end:
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			    # $sp += 20
+
+    jr			$ra					        # jump to $ra
+
+# END FUN move_blaster_by_keystroke
+
 # FUN generate_mushrooms
 # Generate and populate the "mushrooms" array based on "mushroomLength"
 # ARGS:
@@ -608,6 +713,58 @@ draw_blaster:
 
 # END FUN draw_blaster
 
+# FUN fill_background
+# ARGS:
+# $a0: location to fill background (object grid)
+fill_background_at_location:
+    addi		$sp, $sp, -20			    # $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    move 		$s0, $a0			        # $s0 = $a0
+
+    # Calc address
+    move 		$a1, $zero			        # $a1 = $zero
+    jal			calc_display_address	    # jump to calc_display_address and save position to $ra
+    move 		$t2, $v0			        # $t2 = $v0
+
+    # Load colors
+    lw			$t1, screenLineWidth	    # $t1 = screenLineWidth
+    lw			$t9, backgroundColor	    # $t9 = backgroundColor
+
+    # Draw background color at requested location
+    # First line
+    sw			$t9, 0($t2)
+    sw			$t9, 4($t2)
+    sw			$t9, 8($t2)
+
+    # Second line
+    add 		$t2, $t2, $t1			# $t2 = $t2 + $t1, goes to the next line at this location
+    sw			$t9, 0($t2)
+    sw			$t9, 4($t2)
+    sw			$t9, 8($t2)
+
+    # Third line
+    add 		$t2, $t2, $t1			# $t2 = $t2 + $t1, goes to the next line at this location
+    sw			$t9, 0($t2)
+    sw			$t9, 4($t2)
+    sw			$t9, 8($t2)
+
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			    # $sp += 20
+
+    move 		$v0, $zero			        # $v0 = $zero
+    jr			$ra					        # jump to $ra
+
+# END FUN fill_background
+
 # FUN draw_mushrooms
 # ARGS:
 # $a0: address of array storing all mushrooms
@@ -815,3 +972,39 @@ calc_display_address:
     jr			$ra					            # jump to $ra
 
 # END FUN calc_display_address
+
+# FUN calc_coordinates
+# ARGS:
+# $a0: current location (object/display grid)
+# RETURN 
+# $v0: current row
+# $v1: current column
+calc_coordinate:
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    # Load parameters
+    move 		$s0, $a0			    # $s0 = current location
+
+    # Load constants
+    lw			$s1, screenPixelUnits   # $s1 = screenPixelUnits
+
+    # Calculate current row and column
+    div			$s0, $s1			# $s0 / $s1
+    mflo	    $v0					# $v0 = floor($s0 / $s1) 
+    mfhi	    $v1					# $v1 = $s0 mod $s1 
+
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+
+    jr			$ra					    # jump to $ra
+
+# END FUN calc_coordinates
