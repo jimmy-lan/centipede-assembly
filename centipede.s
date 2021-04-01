@@ -287,7 +287,7 @@ move_blaster_by_keystroke:
         # Prevent bug blaster from leaving personal space
         lw			$t0, personalSpaceStart			# $t0 = personalSpaceStart
         sub		    $v0, $s0, $s1			        # $v0 = $s0 - $s1
-        bgt			$v0, $t0, mbbk_handle_w_end 	# if currently in personal space
+        bge			$v0, $t0, mbbk_handle_w_end 	# if currently in personal space
 
         mbbk_left_personal_space_w:
         move 		$v0, $s0			            # revert location
