@@ -47,21 +47,22 @@
     # Objects
     centipedeLocations: .word 0, 1, 2, 3, 4, 5, 6, 7, 8, 9
     centipedeLocationEmpty: .word -1     # Location value to indicate a "dead" centipede segment
-    centipedeDirections: .word 1:10     # 1: goes right, -1: goes left
+    centipedeDirections: .word 1:10      # 1: goes right, -1: goes left
     centipedeLength: .word 10
-    centipedeFramesPerMove: .word 4    # Number of frames per movement of the centipede
+    centipedeFramesPerMove: .word 4      # Number of frames per movement of the centipede
 
-    mushrooms: .word 0:399             # Mushrooms will only exist in the first 19 rows (19 * 21)
+    mushrooms: .word 0:399               # Mushrooms will only exist in the first 19 rows (19 * 21)
     mushroomLength: .word 399
-    mushroomLives: .word 3             # Number of times that a mushroom needs to be blasted before going away
-    mushroomInitQuantity: .word 10     # Initial number of mushrooms to be generated on the screen (maximum)
+    mushroomLives: .word 3               # Number of times that a mushroom needs to be blasted before going away
+    mushroomInitQuantity: .word 10       # Initial number of mushrooms to be generated on the screen (maximum)
 
-    blasterLocation: .word 410         # Initial location of the bug blaster in object grid
-    darts: .word -1:10                 # Array of dart locations where -1 means empty
+    blasterLocation: .word 410           # Initial location of the bug blaster in object grid
+    darts: .word -1:10                   # Array of dart locations where -1 means empty
+    dartLength: .word 10                 # Length of the darts array (maximum number of darts that can be present on the screen)
 
     # Personal Space for Bug Blaster
-    personalSpaceStart: .word 399
-    personalSpaceEnd: .word 441
+    personalSpaceStart: .word 399        # Start position of bug blaster's personal space
+    personalSpaceEnd: .word 441          # End position of bug blaster's personal space
 
     newline: .asciiz "\n"
 
@@ -99,9 +100,9 @@ reset_frame:
 
 game_loop_main:
     # Mushrooms
-    la 		    $a0, mushrooms			            # $a0 = mushrooms
-    lw			$a1, mushroomLength			        # 
-    jal			draw_mushrooms				        # jump to draw_mushrooms and save position to $ra
+    la 		    $a0, mushrooms			    # $a0 = mushrooms
+    lw			$a1, mushroomLength			# 
+    jal			draw_mushrooms				# jump to draw_mushrooms and save position to $ra
 
     # Centipede
     move 		$a0, $s0			        # $a0 = $s0
@@ -322,9 +323,58 @@ move_blaster_by_keystroke:
 
 # END FUN move_blaster_by_keystroke
 
+# FUN shoot_dart_by_keystroke
+# Modify the darts array by adding a dart with appropriate position to it.
+# If the maximum allowed number of darts is achieved, then do nothing.
+# ARGS:
+# $a0: address of the darts array
+# $a1: length of darts array
+# $a2: bug blaster location
+shoot_dart_by_keystroke:
+    addi		$sp, $sp, -20			    # $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    # Move parameters
+    move 		$s0, $a0			        # $s0 = address of the darts array
+    move 		$s1, $a1			        # $s1 = length of the darts array
+    move 		$s2, $a2			        # $s2 = location of the bug blaster
+
+    # Check if key is pressed
+    lw          $t9, 0xffff0000             # load key-press indicator
+	bne         $t9, 1, sdbk_end            # if key is not pressed, end the function
+    
+    # Check type of key being pressed
+    lw			$t9, 0xffff0004			    # load key identifier
+    beq			$t9, 0x78, sbdk_handle_x	# if $t9 == 0x78 then sbdk_handle_x
+    
+    j			sdbk_end				    # jump to sdbk_end
+
+    sdbk_handle_x:
+        li 		    $t0, 0			                    # $t0 = 0
+        sdbk_handle_x_loop:
 
 
-# END FUN move_dart
+        # Decrement loop counter and go to the next element
+        addi		$t0, $t0, 1			                # decrement loop counter by 1
+        bne			$t0, $s1, sdbk_handle_x_loop	    # if $t0 != $s1 (length of the darts array) then sdbk_handle_x_loop
+        
+
+    sdbk_end:
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			    # $sp += 20
+
+    move 		$v0, $zero			        # $v0 = $zero
+    jr			$ra					        # jump to $ra
+
+# END FUN shoot_dart_by_keystroke
 
 # FUN generate_mushrooms
 # Generate and populate the "mushrooms" array based on "mushroomLength"
