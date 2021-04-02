@@ -49,12 +49,15 @@
     centipedeLocationEmpty: .word -1     # Location value to indicate a "dead" centipede segment
     centipedeDirections: .word 1:10     # 1: goes right, -1: goes left
     centipedeLength: .word 10
-    centipedeFramesPerMove: .word 1    # Number of frames per movement of the centipede
+    centipedeFramesPerMove: .word 4    # Number of frames per movement of the centipede
+
     mushrooms: .word 0:399             # Mushrooms will only exist in the first 19 rows (19 * 21)
     mushroomLength: .word 399
     mushroomLives: .word 3             # Number of times that a mushroom needs to be blasted before going away
-    mushroomInitQuantity: .word 10     # Initial number of mushrooms to be generated on the screen
-    blasterLocation: .word 410 
+    mushroomInitQuantity: .word 10     # Initial number of mushrooms to be generated on the screen (maximum)
+
+    blasterLocation: .word 410         # Initial location of the bug blaster in object grid
+    darts: .word -1:10                 # Array of dart locations where -1 means empty
 
     # Personal Space for Bug Blaster
     personalSpaceStart: .word 399
@@ -95,17 +98,17 @@ reset_frame:
     j			game_loop_main				# jump to game_loop_main
 
 game_loop_main:
+    # Mushrooms
+    la 		    $a0, mushrooms			            # $a0 = mushrooms
+    lw			$a1, mushroomLength			        # 
+    jal			draw_mushrooms				        # jump to draw_mushrooms and save position to $ra
+
     # Centipede
-    la 		    $a0, mushrooms			    # $a0 = mushrooms
-    lw			$a1, mushroomLength			# 
-    jal			draw_mushrooms				# jump to draw_mushrooms and save position to $ra
     move 		$a0, $s0			        # $a0 = $s0
     jal			control_centipede			# jump to control_centipede and save position to $ra
 
     # Bug blaster
     jal			control_blaster				# jump to control_blaster and save position to $ra
-
-    # --- END Temporaries
     
     # Frame control
     jal			sleep				        # jump to sleep and save position to $ra
@@ -318,6 +321,10 @@ move_blaster_by_keystroke:
     jr			$ra					        # jump to $ra
 
 # END FUN move_blaster_by_keystroke
+
+
+
+# END FUN move_dart
 
 # FUN generate_mushrooms
 # Generate and populate the "mushrooms" array based on "mushroomLength"
