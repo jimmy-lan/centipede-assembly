@@ -191,7 +191,6 @@ control_centipede:
 # END FUN control_centipede
 
 # FUN control_blaster
-# ARGS:
 control_blaster:
     addi		$sp, $sp, -20			            # $sp -= 20
     sw			$s0, 16($sp)
