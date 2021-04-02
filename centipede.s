@@ -860,9 +860,20 @@ draw_dart:
     sw			$s3, 4($sp)
     sw			$ra, 0($sp)
 
-    # Load parameters
-    move 		$s0, $a0			        # $s0 = $a0
-    move 		$s1, $a1			        # $s1 = $a1
+    # Load parameter
+    move 		$t0, $a1			        # $t0 = color of dart
+
+    li 		    $a1, 1			            # $a1 = 1
+    jal			calc_display_address	    # jump to calc_display_address and save position to $ra
+    move 		$t2, $v0			        # $t2 = $v0
+
+    lw			$t1, screenLineWidth	    # $t1 = screenLineWidth
+    lw			$t9, backgroundColor	    # $t9 = backgroundColor
+
+    # Draw dart
+    sw			$t9, 0($t2)
+    sw			$t0, 4($t2)
+    sw			$t9, 8($t2)
 
     lw			$s0, 16($sp)
     lw			$s1, 12($sp)
