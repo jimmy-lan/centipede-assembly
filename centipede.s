@@ -324,12 +324,12 @@ move_blaster_by_keystroke:
 # END FUN move_blaster_by_keystroke
 
 # FUN shoot_dart_by_keystroke
-# Modify the darts array by adding a dart with appropriate position to it.
-# If the maximum allowed number of darts is achieved, then do nothing.
+# - Modify the darts array by adding a dart with appropriate position (in display grid) to it.
+# - If the maximum allowed number of darts is achieved, then do nothing.
 # ARGS:
 # $a0: address of the darts array
 # $a1: length of darts array
-# $a2: bug blaster location
+# $a2: bug blaster location (object grid)
 shoot_dart_by_keystroke:
     addi		$sp, $sp, -20			    # $sp -= 20
     sw			$s0, 16($sp)
@@ -339,29 +339,41 @@ shoot_dart_by_keystroke:
     sw			$ra, 0($sp)
 
     # Move parameters
-    move 		$s0, $a0			        # $s0 = address of the darts array
-    move 		$s1, $a1			        # $s1 = length of the darts array
-    move 		$s2, $a2			        # $s2 = location of the bug blaster
+    move 		$s0, $a0			                # $s0 = address of the darts array
+    move 		$s1, $a1			                # $s1 = length of the darts array
+    move 		$s2, $a2			                # $s2 = location of the bug blaster (object grid)
+    lw			$s3, screenPixelUnits			    # $s3 = screenPixelUnits
+
+    # Convert object grid location to display grid location
+    move 		$a0, $s2			                # $a0 = location of the bug blaster (object grid)
+    jal			object_to_display_grid_location	    # jump to object_to_display_grid_location and save position to $ra
+    move 		$s2, $v0			                # $s2 = location of the bug blaster (display grid)
 
     # Check if key is pressed
-    lw          $t9, 0xffff0000             # load key-press indicator
-	bne         $t9, 1, sdbk_end            # if key is not pressed, end the function
+    lw          $t9, 0xffff0000                     # load key-press indicator
+	bne         $t9, 1, sdbk_end                    # if key is not pressed, end the function
     
     # Check type of key being pressed
-    lw			$t9, 0xffff0004			    # load key identifier
-    beq			$t9, 0x78, sbdk_handle_x	# if $t9 == 0x78 then sbdk_handle_x
+    lw			$t9, 0xffff0004			            # load key identifier
+    beq			$t9, 0x78, sbdk_handle_x	        # if $t9 == 0x78 then sbdk_handle_x
     
-    j			sdbk_end				    # jump to sdbk_end
+    j			sdbk_end				            # jump to sdbk_end
 
     sdbk_handle_x:
-        li 		    $t0, 0			                    # $t0 = 0
+        li 		    $t0, 0			                    # $t0 = 0, the loop counter
         sdbk_handle_x_loop:
+        lw			$t1, $s0($t0)			            # get current element in the darts array
+        bne			$t1, -1, sdbk_handle_x_loop_next	# if not empty, go to the next element
 
-
+        # Position to place dart is one row above the bug blaster
+        subi		$t2, $s2, $s3			            # $t2 = $s2 - $s3
+        sw			$t2, $s0($t0)			            # save dart location
+        j			sdbk_end				            # jump to sdbk_end
+        
         # Decrement loop counter and go to the next element
+        sdbk_handle_x_loop_next:
         addi		$t0, $t0, 1			                # decrement loop counter by 1
         bne			$t0, $s1, sdbk_handle_x_loop	    # if $t0 != $s1 (length of the darts array) then sdbk_handle_x_loop
-        
 
     sdbk_end:
     lw			$s0, 16($sp)
