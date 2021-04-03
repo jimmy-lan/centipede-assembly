@@ -1059,21 +1059,60 @@ draw_mushrooms:
 # FUN draw_mushroom_at_location
 # ARGS:
 # $a0: position to draw (object grid)
+# $a1: mushroom lives
 draw_mushroom_at_location:
-    addi		$sp, $sp, -4			    # $sp -= 4
+    addi		$sp, $sp, -20			    # $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
     sw			$ra, 0($sp)
 
-    move 		$a1, $zero			        # $a1 = $zero
-    jal			calc_display_address	    # jump to calc_display_address and save position to $ra
-    move 		$t2, $v0			        # $t2 = $v0
+    # Load parameters
+    move 		$s0, $a0			                # $s0 = position (object grid)
+    move 		$s1, $a1			                # $s1 = mushroom current lives
 
-    lw			$t0, mushroomColor		    # $t0 = mushroomColor
-    lw			$t6, mushroomFullLivesColor # $t6 = mushroomFullLivesColor
+    # Calculatre display address
+    move 		$a0, $s0			                # $a0 = $s0
+    move 		$a1, $zero			                # $a1 = $zero
+    jal			calc_display_address	            # jump to calc_display_address and save position to $ra
+    move 		$t2, $v0			                # $t2 = $v0
 
-    lw			$t1, screenLineWidth	    # $t1 = screenLineWidth
-    lw			$t9, backgroundColor	    # $t9 = backgroundColor
+    # Load needed values
+    lw			$t0, mushroomColor		            # $t0 = mushroomColor
+    lw			$t6, mushroomFullLivesColor         # $t6 = mushroomFullLivesColor
+    lw			$t1, screenLineWidth	            # $t1 = screenLineWidth
+    lw			$t9, backgroundColor	            # $t9 = backgroundColor
 
+    # Jump to case based on mushroom lives
+    beq			$s1, 1, draw_mushroom_lives_1	    # if $s1 == 1 then draw_mushroom_lives_1
+    beq			$s1, 2, draw_mushroom_lives_2	    # if $s1 == 2 then draw_mushroom_lives_2
+    beq			$s1, 3, draw_mushroom_lives_3	    # if $s1 == 3 then draw_mushroom_lives_3
+    beq			$s1, 4, draw_mushroom_lives_4	    # if $s1 == 4 then draw_mushroom_lives_4
+    
+    j			draw_mushroom_end				    # jump to draw_mushroom_end
+    
     # --- Draw mushroom
+    draw_mushroom_lives_1:
+    # First line
+    sw			$t0, 0($t2)
+    sw			$t0, 4($t2)
+    sw			$t0, 8($t2)
+
+    # Second line
+    add 		$t2, $t2, $t1			            # $t2 = $t2 + $t1, goes to the next line at this location
+    sw			$t9, 0($t2)
+    sw			$t0, 4($t2)
+    sw			$t9, 8($t2)
+
+    # Third line
+    add 		$t2, $t2, $t1			            # $t2 = $t2 + $t1, goes to the next line at this location
+    sw			$t9, 0($t2)
+    sw			$t9, 4($t2)
+    sw			$t9, 8($t2)
+
+    j			draw_mushroom_end		            # jump to draw_mushroom_end
+
     draw_mushroom_lives_2:
     # First line
     sw			$t0, 0($t2)
@@ -1081,18 +1120,18 @@ draw_mushroom_at_location:
     sw			$t0, 8($t2)
 
     # Second line
-    add 		$t2, $t2, $t1			    # $t2 = $t2 + $t1, goes to the next line at this location
+    add 		$t2, $t2, $t1			            # $t2 = $t2 + $t1, goes to the next line at this location
     sw			$t9, 0($t2)
     sw			$t0, 4($t2)
     sw			$t9, 8($t2)
 
     # Third line
-    add 		$t2, $t2, $t1			    # $t2 = $t2 + $t1, goes to the next line at this location
+    add 		$t2, $t2, $t1			            # $t2 = $t2 + $t1, goes to the next line at this location
     sw			$t9, 0($t2)
     sw			$t0, 4($t2)
     sw			$t9, 8($t2)
 
-    j			draw_mushroom_end		    # jump to draw_mushroom_end
+    j			draw_mushroom_end		            # jump to draw_mushroom_end
 
     draw_mushroom_lives_3:
     # First line
@@ -1101,18 +1140,18 @@ draw_mushroom_at_location:
     sw			$t0, 8($t2)
 
     # Second line
-    add 		$t2, $t2, $t1			    # $t2 = $t2 + $t1, goes to the next line at this location
+    add 		$t2, $t2, $t1			            # $t2 = $t2 + $t1, goes to the next line at this location
     sw			$t9, 0($t2)
     sw			$t9, 4($t2)
     sw			$t9, 8($t2)
 
     # Third line
-    add 		$t2, $t2, $t1			    # $t2 = $t2 + $t1, goes to the next line at this location
+    add 		$t2, $t2, $t1			            # $t2 = $t2 + $t1, goes to the next line at this location
     sw			$t9, 0($t2)
     sw			$t0, 4($t2)
     sw			$t9, 8($t2)
 
-    j			draw_mushroom_end		    # jump to draw_mushroom_end
+    j			draw_mushroom_end		            # jump to draw_mushroom_end
 
     draw_mushroom_lives_4:
     # First line
@@ -1121,26 +1160,30 @@ draw_mushroom_at_location:
     sw			$t5, 8($t2)
 
     # Second line
-    add 		$t2, $t2, $t1			    # $t2 = $t2 + $t1, goes to the next line at this location
+    add 		$t2, $t2, $t1			            # $t2 = $t2 + $t1, goes to the next line at this location
     sw			$t5, 0($t2)
     sw			$t5, 4($t2)
     sw			$t5, 8($t2)
 
     # Third line
-    add 		$t2, $t2, $t1			    # $t2 = $t2 + $t1, goes to the next line at this location
+    add 		$t2, $t2, $t1			            # $t2 = $t2 + $t1, goes to the next line at this location
     sw			$t9, 0($t2)
     sw			$t5, 4($t2)
     sw			$t9, 8($t2)
 
-    j			draw_mushroom_end		    # jump to draw_mushroom_end
-    
-    # --- END Draw mushroom
+    j			draw_mushroom_end		            # jump to draw_mushroom_end
     draw_mushroom_end:
-    lw			$ra, 0($sp)
-    addi		$sp, $sp, 4			        # $sp += 4
+    # --- END Draw mushroom
 
-    move 		$v0, $zero			        # $v0 = $zero
-    jr			$ra					        # jump to $ra
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			            # $sp += 20
+
+    move 		$v0, $zero			                # $v0 = $zero
+    jr			$ra					                # jump to $ra
 
 # END FUN draw_mushroom_at_location
 
