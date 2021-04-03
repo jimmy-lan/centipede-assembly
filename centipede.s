@@ -1070,7 +1070,8 @@ draw_mushroom_at_location:
     lw			$t1, screenLineWidth	# $t1 = screenLineWidth
     lw			$t9, backgroundColor	# $t9 = backgroundColor
 
-    # Draw mushroom
+    # --- Draw mushroom
+    draw_mushroom_lives_4:
     # First line
     sw			$t0, 0($t2)
     sw			$t0, 4($t2)
@@ -1088,6 +1089,10 @@ draw_mushroom_at_location:
     sw			$t0, 4($t2)
     sw			$t9, 8($t2)
 
+    j			draw_mushroom_end		# jump to draw_mushroom_end
+    
+    # --- END Draw mushroom
+    draw_mushroom_end:
     lw			$ra, 0($sp)
     addi		$sp, $sp, 4			    # $sp += 4
 
