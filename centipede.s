@@ -162,30 +162,46 @@ detect_mushroom_dart_collision:
     sw			$s3, 4($sp)
     sw			$ra, 0($sp)
 
-    move 		$s0, $zero			        # loop counter, correspond to index in darts array
+    li 		    $s0, 0			            # loop counter, correspond to index in darts array
     lw			$s1, dartLength			    # $s1 = dartLength
     dmdc_loop:
         # Load current dart
-        lw			$s2, darts($s0)			            # 
+        li			$t9, 4				                # $t9 = 4
+        mult	    $s0, $t9			                # $s0 * $t9 = Hi and Lo registers
+        mflo	    $t9					                # copy Lo to $t9
+        lw			$s2, darts($t9)			            # 
+
+        # If the current dart is empty, continue to next
+        beq			$s2, -1, dmdc_loop_continue	        # if $s2 == -1 then dmdc_loop_continue
         
         # Convert location to object grid
-        # Post-condition: $s2 = dart in object grid
+        # Post-condition: $s2 = dart location in object grid
         move 		$a0, $s2			                # $a0 = $s2
         jal			display_to_object_grid_location		# jump to display_to_object_grid_location and save position to $ra
         move 		$s2, $v0			                # $s2 = $v0
 
+        # Update $s2 to array accessing index
+        # Post-condition: $s2 = dart location in object grid * 4
+        li		    $t9, 4			                    # $t9 = 4
+        mult	    $s2, $t9			                # $s2 * $t9 = Hi and Lo registers
+        mflo	    $s2					                # copy Lo to $s2
+
         # Check if a mushroom exits in this location
-        li		    $t1, 4			                    # $t1 = 4
-        mult	    $s2, $t1			                # $s2 * $t1 = Hi and Lo registers
-        mflo	    $t9					                # copy Lo to $t9
-        lw			$t0, mushrooms($t9)			        # 
+        lw			$t0, mushrooms($s2)			        # 
 
         # If a mushroom exits at location, respond to collision event
         # Otherwise, continue to the next dart
         beq			$t0, $zero, dmdc_loop_continue	    # if $t0 == $zero then dmdc_loop_continue
         # --- Respond to collision
+
         subi		$t0, $t0, 1			                # record mushroom being shot once
-        sw			$t0, mushrooms($t9)			        # save back record
+        sw			$t0, mushrooms($s2)			        # save back record
+        # Remove dart
+        li			$t9, 4				                # $t9 = 4
+        mult	    $s0, $t9			                # $s0 * $t9 = Hi and Lo registers
+        mflo	    $t9					                # copy Lo to $t9
+        li			$t1, -1				                # $t1 = -1
+        sw			$t1, darts($t9)			            # save empty dart
         # --- END Respond to collision
 
         # Increment loop counter and go to next
@@ -1381,7 +1397,7 @@ display_to_object_grid_location:
     # Use number of rows in object grid * number of units per row
     lw			$t2, screenPixelUnits		# $t2 = screenPixelUnits
     mult	    $t0, $t2			        # $t0 * $t2 = Hi and Lo registers
-    mflo	    $t2					        # copy Lo to $t2
+    mflo	    $t0					        # copy Lo to $t0
 
     # Add column number
     add			$t0, $t0, $t1		        # $t0 = $t0 + $t1
