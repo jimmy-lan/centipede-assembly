@@ -387,31 +387,56 @@ shoot_dart_by_keystroke:
 
 # END FUN shoot_dart_by_keystroke
 
-# FUN move_dart
+# FUN move_darts
+# - Move or remove dart on the dart array
+# - Mutates the dart array directly
 # ARGS:
 # $a0: address of dart array
 # $a1: length of dart array
-move_dart:
-    addi		$sp, $sp, -20			# $sp -= 20
+move_darts:
+    addi		$sp, $sp, -20			    # $sp -= 20
     sw			$s0, 16($sp)
     sw			$s1, 12($sp)
     sw			$s2, 8($sp)
     sw			$s3, 4($sp)
     sw			$ra, 0($sp)
 
-    
+    # Load parameters
+    move 		$s0, $a0			        # $s0 = address of dart array
+    move 		$s1, $a1			        # $s1 = length of dart array
 
+    li			$s3, 0				        # $s3 = 0, loop counter
+    
+    move_darts_loop:
+        lw			$t0, $s0($s3)			        # load current element to process
+        beq			$t0, -1, move_darts_skip	    # skip if the current dart location is -1 (empty dart)
+        
+        lw			$t1, screenPixelUnits			# load number of pixel units per row
+        sub 		$t0, $t0, $t1			        # $t0 = $t0 - $t1
+        blt			$t0, 0, md_remove_dart	        # if $t0 < 0 then md_remove_dart
+        j			move_darts_finally				# jump to move_darts_finally
+        
+        md_remove_dart:
+        li			$t0, -1				            # $t0 = -1, set to empty dart location
+        
+        move_darts_finally:
+        sw			$t0, $s0($s3)                   # save the updated location back to the array
+
+        move_darts_skip:
+        addi		$s3, $s3, 1			            # $s3 = $s3 + 1
+        bne			$s3, $s1, move_darts_loop	    # if $s3 != $s1 then move_darts_loop
+        
     lw			$s0, 16($sp)
     lw			$s1, 12($sp)
     lw			$s2, 8($sp)
     lw			$s3, 4($sp)
     lw			$ra, 0($sp)
-    addi		$sp, $sp, 20			# $sp += 20
+    addi		$sp, $sp, 20			    # $sp += 20
 
-    move 		$v0, $zero			# $v0 = $zero
-    jr			$ra					# jump to $ra
+    move 		$v0, $zero			        # $v0 = $zero
+    jr			$ra					        # jump to $ra
 
-# END FUN move_dart
+# END FUN move_darts
 
 # FUN generate_mushrooms
 # Generate and populate the "mushrooms" array based on "mushroomLength"
