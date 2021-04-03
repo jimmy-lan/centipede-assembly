@@ -119,12 +119,12 @@ game_loop_main:
     move 		$a0, $s0			        # $a0 = $s0
     jal			control_centipede			# jump to control_centipede and save position to $ra
 
+    # Bug blaster
+    jal			control_blaster				# jump to control_blaster and save position to $ra
+
     # Darts
     move 		$a0, $s0			        # $a0 = $s0
     jal			control_darts				# jump to control_darts and save position to $ra
-
-    # Bug blaster
-    jal			control_blaster				# jump to control_blaster and save position to $ra
     
     # Frame control
     jal			sleep				        # jump to sleep and save position to $ra
@@ -141,6 +141,36 @@ program_exit:
 	syscall
 
 ############################################################################################
+
+##############################################
+# # Collision Detection
+##############################################
+
+# FUN detect_mushroom_dart_collision
+# - Detect and respond to collision event of a mushroom with a dart.
+# - This function IS INTENDED TO mutate static data if appropriate.
+# ARGS:
+detect_mushroom_dart_collision:
+    addi		$sp, $sp, -20			    # $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    
+
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			    # $sp += 20
+
+    move 		$v0, $zero			        # $v0 = $zero
+    jr			$ra					        # jump to $ra
+
+# END FUN detect_mushroom_dart_collision
 
 ##############################################
 # # Controllers
