@@ -135,7 +135,6 @@ program_exit:
 ##############################################
 # # Controllers
 ##############################################
-
 # FUN control_centipede
 # ARGS:
 # $a0: current frame number. 
@@ -230,6 +229,47 @@ control_blaster:
     jr			$ra					                # jump to $ra
 
 # END FUN control_blaster
+
+# FUN control_darts
+# ARGS:
+# $a0: current frame number
+control_darts:
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    # Load parameters
+    move 		$s0, $a0			                # $s0 = current frame number
+
+    # Load constants
+    lw			$s1, dartFramesPerMove  		    # $s1 = dartFramesPerMove
+
+    # Check if centipede should move
+    div			$s0, $s1			                # $s0 / $s1
+    mfhi	    $t3					                # $t3 = $a0 mod $s1
+    bne			$t3, $zero, end_control_centipede	# if $t3 != $zero then end_control_centipede
+    
+    end_control_darts:
+    # Check for keystroke and add a new dart if appropriate
+    la		    $a0, darts		                        # 
+    lw		    $a1, dartLength		                    # 
+    lw			$a2, blasterLocation    			    # 
+    jal			shoot_dart_by_keystroke				    # jump to shoot_dart_by_keystroke and save position to $ra
+
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+
+    move 		$v0, $zero			# $v0 = $zero
+    jr			$ra					# jump to $ra
+
+# END FUN control_darts
 
 ##############################################
 # # Logics
