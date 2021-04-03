@@ -35,7 +35,7 @@
     unitWidth: .word 12             # Width of "unit"
     screenLineWidth: .word 256      # Width of pixels in a line of screen
     screenLineUnusedWidth: .word 4  # Width of pixels per line that is unused
-    framesPerSecond: .word 25       # Number of frames per second (Note: 1000 / framesPerSecond should be an int)
+    framesPerSecond: .word 30       # Number of frames per second (Note: 1000 / framesPerSecond should be an int)
 
     # Colors
     backgroundColor: .word 0x00000000
@@ -50,7 +50,7 @@
     centipedeLocationEmpty: .word -1     # Location value to indicate a "dead" centipede segment
     centipedeDirections: .word 1:10      # 1: goes right, -1: goes left
     centipedeLength: .word 10
-    centipedeFramesPerMove: .word 5      # Number of frames per movement of the centipede
+    centipedeFramesPerMove: .word 6      # Number of frames per movement of the centipede
 
     # Mushrooms
     mushrooms: .word 0:399               # Mushrooms will only exist in the first 19 rows (19 * 21)
