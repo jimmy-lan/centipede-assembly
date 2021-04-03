@@ -62,6 +62,7 @@
     blasterLocation: .word 410           # Initial location of the bug blaster in object grid
     darts: .word -1:10                   # Array of dart locations where -1 means empty
     dartLength: .word 10                 # Length of the darts array (maximum number of darts that can be present on the screen)
+    dartColor: .word 0x00ffffff          # Color of darts
     dartFramesPerMove: .word 1           # Number of frames per movement of the darts
     # --- END Objects
 
@@ -244,20 +245,36 @@ control_darts:
     # Load parameters
     move 		$s0, $a0			                # $s0 = current frame number
 
-    # Load constants
-    lw			$s1, dartFramesPerMove  		    # $s1 = dartFramesPerMove
+    # Clear old darts on the screen
+    la			$a0, darts			                # $a0 = address of darts
+    lw			$a1, dartLength			            # $a1 = dartLength
+    lw			$a2, backgroundColor			    # $a2 = backgroundColor
+    jal			draw_darts				            # jump to draw_darts and save position to $ra
 
-    # Check if centipede should move
+    # --- Determine if dart should move
+    lw			$s1, dartFramesPerMove  		    # $s1 = dartFramesPerMove
     div			$s0, $s1			                # $s0 / $s1
     mfhi	    $t3					                # $t3 = $a0 mod $s1
-    bne			$t3, $zero, end_control_centipede	# if $t3 != $zero then end_control_centipede
+    bne			$t3, $zero, end_darts_movement	    # if $t3 != $zero then end_darts_movement
+    # --- END Determine if dart should move
     
-    end_control_darts:
+    # Move darts
+    la			$a0, darts			                # $a0 = address of darts
+    lw			$a1, dartLength			            # $a1 = dartLength
+    jal			move_darts				            # jump to move_darts and save position to $ra
+
+    end_darts_movement:
     # Check for keystroke and add a new dart if appropriate
     la		    $a0, darts		                        # 
     lw		    $a1, dartLength		                    # 
     lw			$a2, blasterLocation    			    # 
     jal			shoot_dart_by_keystroke				    # jump to shoot_dart_by_keystroke and save position to $ra
+
+    # Draw new darts
+    la			$a0, darts			                # $a0 = address of darts
+    lw			$a1, dartLength			            # $a1 = dartLength
+    lw			$a2, dartColor      			    # $a2 = dartColor
+    jal			draw_darts				            # jump to draw_darts and save position to $ra
 
     lw			$s0, 16($sp)
     lw			$s1, 12($sp)
