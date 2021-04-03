@@ -1032,7 +1032,14 @@ draw_darts:
 
     li			$s3, 0				    # $s3 = 0, loop counter
     draw_darts_loop:
+        lw			$t0, $s0($s3)			        # the current dart location for drawing
 
+        # Draw current dart
+        move 		$a0, $t0			            # $a0 = location
+        move 		$a1, $s2			            # $a1 = dart color
+        jal			draw_dart				        # jump to draw_dart and save position to $ra
+        
+        # Increment loop counter and go to next
         addi		$s3, $s3, 1			            # $s3 = $s3 + 1
         bne			$s3, $s1, draw_darts_loop	    # if $s3 != $s1 then draw_darts_loop
         
