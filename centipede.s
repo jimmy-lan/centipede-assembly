@@ -1111,12 +1111,9 @@ draw_dart:
     # Load needed values
     move 		$t0, $s1			        # $t0 = color of dart
     lw			$t1, screenLineWidth	    # $t1 = screenLineWidth
-    lw			$t9, backgroundColor	    # $t9 = backgroundColor
 
     # Draw dart
-    sw			$t9, 0($t2)
     sw			$t0, 4($t2)
-    sw			$t9, 8($t2)
 
     end_draw_dart:
     lw			$s0, 16($sp)
