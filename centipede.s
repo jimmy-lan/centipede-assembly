@@ -116,6 +116,10 @@ game_loop_main:
 
     # Bug blaster
     jal			control_blaster				# jump to control_blaster and save position to $ra
+
+    # Darts
+    move 		$a0, $s0			        # $a0 = $s0
+    jal			control_darts				# jump to control_darts and save position to $ra
     
     # Frame control
     jal			sleep				        # jump to sleep and save position to $ra
