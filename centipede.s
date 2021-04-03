@@ -1033,11 +1033,9 @@ draw_darts:
     li			$s3, 0				    # $s3 = 0, loop counter
     draw_darts_loop:
 
-        addi		$s3, $s3, 1			# $s3 = $s3 + 1
-        bne			$s3, $, target	# if $s3 != $ then target
+        addi		$s3, $s3, 1			            # $s3 = $s3 + 1
+        bne			$s3, $s1, draw_darts_loop	    # if $s3 != $s1 then draw_darts_loop
         
-        
-
     lw			$s0, 16($sp)
     lw			$s1, 12($sp)
     lw			$s2, 8($sp)
@@ -1063,12 +1061,19 @@ draw_dart:
     sw			$ra, 0($sp)
 
     # Load parameter
-    move 		$t0, $a1			        # $t0 = color of dart
+    move 		$s0, $a0			        # $s0 = location (display grid)
+    move 		$s1, $a1			        # $s1 = color of dart
 
+    # Do not draw if dart is empty
+    beq			$s0, -1, end_draw_dart	    # if $s0 == -1 then end_draw_dart
+
+    # Calculate display address
     li 		    $a1, 1			            # $a1 = 1
     jal			calc_display_address	    # jump to calc_display_address and save position to $ra
     move 		$t2, $v0			        # $t2 = $v0
 
+    # Load needed values
+    move 		$t0, $s1			        # $t0 = color of dart
     lw			$t1, screenLineWidth	    # $t1 = screenLineWidth
     lw			$t9, backgroundColor	    # $t9 = backgroundColor
 
@@ -1077,6 +1082,7 @@ draw_dart:
     sw			$t0, 4($t2)
     sw			$t9, 8($t2)
 
+    end_draw_dart:
     lw			$s0, 16($sp)
     lw			$s1, 12($sp)
     lw			$s2, 8($sp)
