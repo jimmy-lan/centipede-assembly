@@ -130,7 +130,6 @@ game_loop_main:
     # Game rule logic
     jal			detect_mushroom_dart_collision	# jump to detect_mushroom_dart_collision and save position to $ra
     
-    
     # Frame control
     jal			sleep				            # jump to sleep and save position to $ra
     subi		$s0, $s0, 1			            # $s0 = $s0 - 1
@@ -176,14 +175,17 @@ detect_mushroom_dart_collision:
         move 		$s2, $v0			                # $s2 = $v0
 
         # Check if a mushroom exits in this location
-        lw			$t0, mushrooms($s2)			        # 
+        li		    $t1, 4			                    # $t1 = 4
+        mult	    $s2, $t1			                # $s2 * $t1 = Hi and Lo registers
+        mflo	    $t9					                # copy Lo to $t9
+        lw			$t0, mushrooms($t9)			        # 
 
         # If a mushroom exits at location, respond to collision event
         # Otherwise, continue to the next dart
         beq			$t0, $zero, dmdc_loop_continue	    # if $t0 == $zero then dmdc_loop_continue
         # --- Respond to collision
         subi		$t0, $t0, 1			                # record mushroom being shot once
-        sw			$t0, mushrooms($s2)			        # save back record
+        sw			$t0, mushrooms($t9)			        # save back record
         # --- END Respond to collision
 
         # Increment loop counter and go to next
