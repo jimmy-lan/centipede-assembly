@@ -109,30 +109,34 @@ reset_frame:
 
 game_loop_main:
     # Load values
-    lw          $s6, 0xffff0000             # load key-press indicator
+    lw          $s6, 0xffff0000                 # load key-press indicator
 
     # Mushrooms
-    la 		    $a0, mushrooms			    # $a0 = mushrooms
-    lw			$a1, mushroomLength			# 
-    jal			draw_mushrooms				# jump to draw_mushrooms and save position to $ra
+    la 		    $a0, mushrooms			        # $a0 = mushrooms
+    lw			$a1, mushroomLength			    # 
+    jal			draw_mushrooms				    # jump to draw_mushrooms and save position to $ra
 
     # Centipede
-    move 		$a0, $s0			        # $a0 = $s0
-    jal			control_centipede			# jump to control_centipede and save position to $ra
+    move 		$a0, $s0			            # $a0 = $s0
+    jal			control_centipede			    # jump to control_centipede and save position to $ra
 
     # Bug blaster
-    jal			control_blaster				# jump to control_blaster and save position to $ra
+    jal			control_blaster				    # jump to control_blaster and save position to $ra
 
     # Darts
-    move 		$a0, $s0			        # $a0 = $s0
-    jal			control_darts				# jump to control_darts and save position to $ra
+    move 		$a0, $s0			            # $a0 = $s0
+    jal			control_darts				    # jump to control_darts and save position to $ra
+
+    # Game rule logic
+    jal			detect_mushroom_dart_collision	# jump to detect_mushroom_dart_collision and save position to $ra
+    
     
     # Frame control
-    jal			sleep				        # jump to sleep and save position to $ra
-    subi		$s0, $s0, 1			        # $s0 = $s0 - 1
-    beq			$s0, $zero, reset_frame	    # if $s0 == $zero then reset_frame
+    jal			sleep				            # jump to sleep and save position to $ra
+    subi		$s0, $s0, 1			            # $s0 = $s0 - 1
+    beq			$s0, $zero, reset_frame	        # if $s0 == $zero then reset_frame
     
-    j			game_loop_main				# jump to game_loop_main
+    j			game_loop_main				    # jump to game_loop_main
 
 
 ############################################################################################
