@@ -1247,6 +1247,51 @@ object_to_display_grid_location:
 
 # END FUN object_to_display_grid_location
 
+# FUN display_to_object_grid_location
+# ARGS:
+# $a0: position in display grid
+# RETURN $v0: position in object grid
+display_to_object_grid_location:
+    addi		$sp, $sp, -20			    # $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    # Save parameters
+    move 		$s0, $a0			        # $s0 = $a0
+
+    # Calculate current coordinate
+    jal			calc_coordinate				# jump to calc_coordinate and save position to $ra
+    move 		$t0, $v0			        # $t0 = current row
+    move 		$t1, $v1			        # $t1 = current column
+
+    # Divide current row by 3 and take the floor
+    li			$t2, 3				        # $t2 = 3
+    div			$t0, $t2			        # $t0 / $t2
+    mflo	    $t0					        # $t0 = floor($t0 / $t2) 
+    
+    # Use number of rows in object grid * number of units per row
+    lw			$t2, screenPixelUnits		# $t2 = screenPixelUnits
+    mult	    $t0, $t2			        # $t0 * $t2 = Hi and Lo registers
+    mflo	    $t2					        # copy Lo to $t2
+
+    # Add column number
+    add			$t0, $t0, $t1		        # $t0 = $t0 + $t1
+    
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			    # $sp += 20
+
+    move 		$v0, $t0			        # $v0 = $t0
+    jr			$ra					        # jump to $ra
+
+# END FUN display_to_object_grid_location
+
 # FUN calc_display_address
 # ARGS:
 # $a0: position
