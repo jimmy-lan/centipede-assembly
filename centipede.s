@@ -168,7 +168,7 @@ detect_mushroom_dart_collision:
         # Convert location to object grid
         # Post-condition: $s2 = dart in object grid
         move 		$a0, $s2			                # $a0 = $s2
-        jal			display_to_object_grid		        # jump to display_to_object_grid and save position to $ra
+        jal			display_to_object_grid_location		# jump to display_to_object_grid_location and save position to $ra
         move 		$s2, $v0			                # $s2 = $v0
 
         # Check if a mushroom exits in this location
@@ -1032,11 +1032,8 @@ draw_mushrooms:
     move 		$s2, $zero			    # $s2 = 0, counter for current mushroom index
 
     draw_mushrooms_loop:
-        lw			$a0, 0($s0)			                # load current mushroom to draw
-        # Do not draw if the mushroom entry is 0
-        beq			$a0, $zero, dmr_skip_draw	        # if $a0 == $zero then dmr_skip_draw
-        
         move 		$a0, $s2			                # $a0 = $s2
+        lw			$a1, 0($s0)			                # load current mushroom to draw
         jal			draw_mushroom_at_location			# jump to draw_mushroom_at_location and save position to $ra
 
         dmr_skip_draw:
