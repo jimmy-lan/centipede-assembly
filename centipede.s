@@ -41,7 +41,7 @@
     backgroundColor: .word 0x00000000
     centipedeColor: .word 0x00f7a634
     centipedeHeadColor: .word 0x00e09b3a
-    mushroomFullLivesColor: .word 0x001b86e3
+    mushroomFullLivesColor: .word 0x004394f0
     mushroomColor: .word 0x0076c0d6
     blasterColor: .word 0x00ffffff
     dartColor: .word 0x00ffffff
@@ -1152,20 +1152,20 @@ draw_mushroom_at_location:
 
     draw_mushroom_lives_4:
     # First line
-    sw			$t5, 0($t2)
-    sw			$t5, 4($t2)
-    sw			$t5, 8($t2)
+    sw			$t6, 0($t2)
+    sw			$t6, 4($t2)
+    sw			$t6, 8($t2)
 
     # Second line
     add 		$t2, $t2, $t1			            # $t2 = $t2 + $t1, goes to the next line at this location
-    sw			$t5, 0($t2)
-    sw			$t5, 4($t2)
-    sw			$t5, 8($t2)
+    sw			$t6, 0($t2)
+    sw			$t6, 4($t2)
+    sw			$t6, 8($t2)
 
     # Third line
     add 		$t2, $t2, $t1			            # $t2 = $t2 + $t1, goes to the next line at this location
     sw			$t9, 0($t2)
-    sw			$t5, 4($t2)
+    sw			$t6, 4($t2)
     sw			$t9, 8($t2)
 
     j			draw_mushroom_end		            # jump to draw_mushroom_end
