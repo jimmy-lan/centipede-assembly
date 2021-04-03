@@ -71,6 +71,7 @@
     personalSpaceEnd: .word 441          # End position of bug blaster's personal space
 
     newline: .asciiz "\n"
+    sampleString: .asciiz "Sample String\n"
 
 .globl main
 .text
@@ -114,12 +115,12 @@ game_loop_main:
     move 		$a0, $s0			        # $a0 = $s0
     jal			control_centipede			# jump to control_centipede and save position to $ra
 
-    # Bug blaster
-    jal			control_blaster				# jump to control_blaster and save position to $ra
-
     # Darts
     move 		$a0, $s0			        # $a0 = $s0
     jal			control_darts				# jump to control_darts and save position to $ra
+
+    # Bug blaster
+    jal			control_blaster				# jump to control_blaster and save position to $ra
     
     # Frame control
     jal			sleep				        # jump to sleep and save position to $ra
@@ -420,24 +421,25 @@ shoot_dart_by_keystroke:
     
     # Check type of key being pressed
     lw			$t9, 0xffff0004			            # load key identifier
-    beq			$t9, 0x78, sbdk_handle_x	        # if $t9 == 0x78 then sbdk_handle_x
+    beq			$t9, 0x78, sdbk_handle_x	        # if $t9 == 0x78 then sdbk_handle_x
     
     j			sdbk_end				            # jump to sdbk_end
 
     sdbk_handle_x:
         li 		    $t0, 0			                    # $t0 = 0, the loop counter
         sdbk_handle_x_loop:
-        lw			$t1, $s0($t0)			            # get current element in the darts array
+        lw			$t1, 0($s0)			                # get current element in the darts array
         bne			$t1, -1, sdbk_handle_x_loop_next	# if not empty, go to the next element
 
         # Position to place dart is one row above the bug blaster
-        subi		$t2, $s2, $s3			            # $t2 = $s2 - $s3
-        sw			$t2, $s0($t0)			            # save dart location
+        sub 		$t2, $s2, $s3			            # $t2 = $s2 - $s3
+        sw			$t2, 0($s0)			            # save dart location
         j			sdbk_end				            # jump to sdbk_end
         
         # Decrement loop counter and go to the next element
         sdbk_handle_x_loop_next:
         addi		$t0, $t0, 1			                # decrement loop counter by 1
+        addi		$s0, $s0, 4			                # $s0 = $s0 + 4
         bne			$t0, $s1, sdbk_handle_x_loop	    # if $t0 != $s1 (length of the darts array) then sdbk_handle_x_loop
 
     sdbk_end:
@@ -474,7 +476,7 @@ move_darts:
     li			$s3, 0				        # $s3 = 0, loop counter
 
     move_darts_loop:
-        lw			$t0, $s0($s3)			        # load current element to process
+        lw			$t0, 0($s0)			        # load current element to process
         beq			$t0, -1, move_darts_skip	    # skip if the current dart location is -1 (empty dart)
         
         lw			$t1, screenPixelUnits			# load number of pixel units per row
@@ -486,10 +488,11 @@ move_darts:
         li			$t0, -1				            # $t0 = -1, set to empty dart location
         
         move_darts_finally:
-        sw			$t0, $s0($s3)                   # save the updated location back to the array
+        sw			$t0, 0($s0)                   # save the updated location back to the array
 
         move_darts_skip:
         addi		$s3, $s3, 1			            # $s3 = $s3 + 1
+        addi		$s0, $s0, 4			            # $s0 = $s0 + 4
         bne			$s3, $s1, move_darts_loop	    # if $s3 != $s1 then move_darts_loop
         
     lw			$s0, 16($sp)
@@ -1053,7 +1056,7 @@ draw_darts:
 
     li			$s3, 0				    # $s3 = 0, loop counter
     draw_darts_loop:
-        lw			$t0, $s0($s3)			        # the current dart location for drawing
+        lw			$t0, 0($s0)			        # the current dart location for drawing
 
         # Draw current dart
         move 		$a0, $t0			            # $a0 = location
@@ -1062,6 +1065,7 @@ draw_darts:
         
         # Increment loop counter and go to next
         addi		$s3, $s3, 1			            # $s3 = $s3 + 1
+        addi		$s0, $s0, 4			            # $s0 = $s0 + 4
         bne			$s3, $s1, draw_darts_loop	    # if $s3 != $s1 then draw_darts_loop
         
     lw			$s0, 16($sp)
