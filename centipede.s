@@ -44,21 +44,26 @@
     mushroomColor: .word 0x0076c0d6
     blasterColor: .word 0x00ffffff
 
-    # Objects
+    # --- Objects
+    # Centipede
     centipedeLocations: .word 0, 1, 2, 3, 4, 5, 6, 7, 8, 9
     centipedeLocationEmpty: .word -1     # Location value to indicate a "dead" centipede segment
     centipedeDirections: .word 1:10      # 1: goes right, -1: goes left
     centipedeLength: .word 10
     centipedeFramesPerMove: .word 4      # Number of frames per movement of the centipede
 
+    # Mushrooms
     mushrooms: .word 0:399               # Mushrooms will only exist in the first 19 rows (19 * 21)
     mushroomLength: .word 399
     mushroomLives: .word 3               # Number of times that a mushroom needs to be blasted before going away
     mushroomInitQuantity: .word 10       # Initial number of mushrooms to be generated on the screen (maximum)
 
+    # Bug blaster + darts
     blasterLocation: .word 410           # Initial location of the bug blaster in object grid
     darts: .word -1:10                   # Array of dart locations where -1 means empty
     dartLength: .word 10                 # Length of the darts array (maximum number of darts that can be present on the screen)
+    dartFramesPerMove: .word 1           # Number of frames per movement of the darts
+    # --- END Objects
 
     # Personal Space for Bug Blaster
     personalSpaceStart: .word 399        # Start position of bug blaster's personal space
@@ -406,7 +411,7 @@ move_darts:
     move 		$s1, $a1			        # $s1 = length of dart array
 
     li			$s3, 0				        # $s3 = 0, loop counter
-    
+
     move_darts_loop:
         lw			$t0, $s0($s3)			        # load current element to process
         beq			$t0, -1, move_darts_skip	    # skip if the current dart location is -1 (empty dart)
