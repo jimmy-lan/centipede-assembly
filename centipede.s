@@ -57,7 +57,7 @@
     # Mushrooms
     mushrooms: .word 0:399               # Mushrooms will only exist in the first 19 rows (19 * 21)
     mushroomLength: .word 399
-    mushroomLives: .word 3               # Number of times that a mushroom needs to be blasted before going away
+    mushroomLives: .word 4               # Number of times that a mushroom needs to be blasted before going away
     mushroomInitQuantity: .word 10       # Initial number of mushrooms to be generated on the screen (maximum)
 
     # Bug blaster + darts
@@ -1138,9 +1138,9 @@ draw_mushroom_at_location:
 
     # Second line
     add 		$t2, $t2, $t1			            # $t2 = $t2 + $t1, goes to the next line at this location
-    sw			$t9, 0($t2)
-    sw			$t9, 4($t2)
-    sw			$t9, 8($t2)
+    sw			$t0, 0($t2)
+    sw			$t0, 4($t2)
+    sw			$t0, 8($t2)
 
     # Third line
     add 		$t2, $t2, $t1			            # $t2 = $t2 + $t1, goes to the next line at this location
