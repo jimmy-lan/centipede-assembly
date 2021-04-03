@@ -162,17 +162,29 @@ detect_mushroom_dart_collision:
     lw			$s1, dartLength			    # $s1 = dartLength
     dmdc_loop:
         # Load current dart
-
+        lw			$s2, darts($s0)			            # 
+        
         # Convert location to object grid
+        # Post-condition: $s2 = dart in object grid
+        move 		$a0, $s2			                # $a0 = $s2
+        jal			display_to_object_grid		        # jump to display_to_object_grid and save position to $ra
+        move 		$s2, $v0			                # $s2 = $v0
 
         # Check if a mushroom exits in this location
+        lw			$t0, mushrooms($s2)			        # 
 
         # If a mushroom exits at location, respond to collision event
         # Otherwise, continue to the next dart
+        beq			$t0, $zero, dmdc_loop_continue	    # if $t0 == $zero then dmdc_loop_continue
+        # --- Respond to collision
+        subi		$t0, $t0, 1			                # record mushroom being shot once
+        sw			$t0, mushrooms($s2)			        # save back record
+        # --- END Respond to collision
 
         # Increment loop counter and go to next
-        addi		$s0, $s0, 1			        # increment loop counter
-        blt			$s0, $s1, dmdc_loop	        # if $s0 < $s1 then dmdc_loop
+        dmdc_loop_continue:
+        addi		$s0, $s0, 1			                # increment loop counter
+        blt			$s0, $s1, dmdc_loop	                # if $s0 < $s1 then dmdc_loop
 
     lw			$s0, 16($sp)
     lw			$s1, 12($sp)
