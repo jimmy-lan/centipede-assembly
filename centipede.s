@@ -158,7 +158,21 @@ detect_mushroom_dart_collision:
     sw			$s3, 4($sp)
     sw			$ra, 0($sp)
 
-    
+    move 		$s0, $zero			        # loop counter, correspond to index in darts array
+    lw			$s1, dartLength			    # $s1 = dartLength
+    dmdc_loop:
+        # Load current dart
+
+        # Convert location to object grid
+
+        # Check if a mushroom exits in this location
+
+        # If a mushroom exits at location, respond to collision event
+        # Otherwise, continue to the next dart
+
+        # Increment loop counter and go to next
+        addi		$s0, $s0, 1			        # increment loop counter
+        blt			$s0, $s1, dmdc_loop	        # if $s0 < $s1 then dmdc_loop
 
     lw			$s0, 16($sp)
     lw			$s1, 12($sp)
