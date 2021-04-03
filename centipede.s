@@ -41,8 +41,10 @@
     backgroundColor: .word 0x00000000
     centipedeColor: .word 0x00f7a634
     centipedeHeadColor: .word 0x00e09b3a
+    mushroomFullLivesColor: .word 0x001b86e3
     mushroomColor: .word 0x0076c0d6
     blasterColor: .word 0x00ffffff
+    dartColor: .word 0x00ffffff
 
     # --- Objects
     # Centipede
@@ -62,7 +64,6 @@
     blasterLocation: .word 410           # Initial location of the bug blaster in object grid
     darts: .word -1:10                   # Array of dart locations where -1 means empty
     dartLength: .word 10                 # Length of the darts array (maximum number of darts that can be present on the screen)
-    dartColor: .word 0x00ffffff          # Color of darts
     dartFramesPerMove: .word 1           # Number of frames per movement of the darts
     # --- END Objects
 
@@ -1059,45 +1060,87 @@ draw_mushrooms:
 # ARGS:
 # $a0: position to draw (object grid)
 draw_mushroom_at_location:
-    addi		$sp, $sp, -4			# $sp -= 4
+    addi		$sp, $sp, -4			    # $sp -= 4
     sw			$ra, 0($sp)
 
-    move 		$a1, $zero			    # $a1 = $zero
-    jal			calc_display_address	# jump to calc_display_address and save position to $ra
-    move 		$t2, $v0			    # $t2 = $v0
+    move 		$a1, $zero			        # $a1 = $zero
+    jal			calc_display_address	    # jump to calc_display_address and save position to $ra
+    move 		$t2, $v0			        # $t2 = $v0
 
-    lw			$t0, mushroomColor		# $t0 = mushroomColor
-    lw			$t1, screenLineWidth	# $t1 = screenLineWidth
-    lw			$t9, backgroundColor	# $t9 = backgroundColor
+    lw			$t0, mushroomColor		    # $t0 = mushroomColor
+    lw			$t6, mushroomFullLivesColor # $t6 = mushroomFullLivesColor
+
+    lw			$t1, screenLineWidth	    # $t1 = screenLineWidth
+    lw			$t9, backgroundColor	    # $t9 = backgroundColor
 
     # --- Draw mushroom
-    draw_mushroom_lives_4:
+    draw_mushroom_lives_2:
     # First line
     sw			$t0, 0($t2)
     sw			$t0, 4($t2)
     sw			$t0, 8($t2)
 
     # Second line
-    add 		$t2, $t2, $t1			# $t2 = $t2 + $t1, goes to the next line at this location
-    sw			$t0, 0($t2)
-    sw			$t0, 4($t2)
-    sw			$t0, 8($t2)
-
-    # Third line
-    add 		$t2, $t2, $t1			# $t2 = $t2 + $t1, goes to the next line at this location
+    add 		$t2, $t2, $t1			    # $t2 = $t2 + $t1, goes to the next line at this location
     sw			$t9, 0($t2)
     sw			$t0, 4($t2)
     sw			$t9, 8($t2)
 
-    j			draw_mushroom_end		# jump to draw_mushroom_end
+    # Third line
+    add 		$t2, $t2, $t1			    # $t2 = $t2 + $t1, goes to the next line at this location
+    sw			$t9, 0($t2)
+    sw			$t0, 4($t2)
+    sw			$t9, 8($t2)
+
+    j			draw_mushroom_end		    # jump to draw_mushroom_end
+
+    draw_mushroom_lives_3:
+    # First line
+    sw			$t0, 0($t2)
+    sw			$t0, 4($t2)
+    sw			$t0, 8($t2)
+
+    # Second line
+    add 		$t2, $t2, $t1			    # $t2 = $t2 + $t1, goes to the next line at this location
+    sw			$t9, 0($t2)
+    sw			$t9, 4($t2)
+    sw			$t9, 8($t2)
+
+    # Third line
+    add 		$t2, $t2, $t1			    # $t2 = $t2 + $t1, goes to the next line at this location
+    sw			$t9, 0($t2)
+    sw			$t0, 4($t2)
+    sw			$t9, 8($t2)
+
+    j			draw_mushroom_end		    # jump to draw_mushroom_end
+
+    draw_mushroom_lives_4:
+    # First line
+    sw			$t5, 0($t2)
+    sw			$t5, 4($t2)
+    sw			$t5, 8($t2)
+
+    # Second line
+    add 		$t2, $t2, $t1			    # $t2 = $t2 + $t1, goes to the next line at this location
+    sw			$t5, 0($t2)
+    sw			$t5, 4($t2)
+    sw			$t5, 8($t2)
+
+    # Third line
+    add 		$t2, $t2, $t1			    # $t2 = $t2 + $t1, goes to the next line at this location
+    sw			$t9, 0($t2)
+    sw			$t5, 4($t2)
+    sw			$t9, 8($t2)
+
+    j			draw_mushroom_end		    # jump to draw_mushroom_end
     
     # --- END Draw mushroom
     draw_mushroom_end:
     lw			$ra, 0($sp)
-    addi		$sp, $sp, 4			    # $sp += 4
+    addi		$sp, $sp, 4			        # $sp += 4
 
-    move 		$v0, $zero			    # $v0 = $zero
-    jr			$ra					    # jump to $ra
+    move 		$v0, $zero			        # $v0 = $zero
+    jr			$ra					        # jump to $ra
 
 # END FUN draw_mushroom_at_location
 
