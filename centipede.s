@@ -35,7 +35,7 @@
     unitWidth: .word 12             # Width of "unit"
     screenLineWidth: .word 256      # Width of pixels in a line of screen
     screenLineUnusedWidth: .word 4  # Width of pixels per line that is unused
-    framesPerSecond: .word 20       # Number of frames per second (Note: 1000 / framesPerSecond should be an int)
+    framesPerSecond: .word 25       # Number of frames per second (Note: 1000 / framesPerSecond should be an int)
 
     # Colors
     backgroundColor: .word 0x00000000
@@ -44,23 +44,34 @@
     mushroomColor: .word 0x0076c0d6
     blasterColor: .word 0x00ffffff
 
-    # Objects
+    # --- Objects
+    # Centipede
     centipedeLocations: .word 0, 1, 2, 3, 4, 5, 6, 7, 8, 9
     centipedeLocationEmpty: .word -1     # Location value to indicate a "dead" centipede segment
-    centipedeDirections: .word 1:10     # 1: goes right, -1: goes left
+    centipedeDirections: .word 1:10      # 1: goes right, -1: goes left
     centipedeLength: .word 10
-    centipedeFramesPerMove: .word 1    # Number of frames per movement of the centipede
-    mushrooms: .word 0:399             # Mushrooms will only exist in the first 19 rows (19 * 21)
+    centipedeFramesPerMove: .word 5      # Number of frames per movement of the centipede
+
+    # Mushrooms
+    mushrooms: .word 0:399               # Mushrooms will only exist in the first 19 rows (19 * 21)
     mushroomLength: .word 399
-    mushroomLives: .word 3             # Number of times that a mushroom needs to be blasted before going away
-    mushroomInitQuantity: .word 10     # Initial number of mushrooms to be generated on the screen
-    blasterLocation: .word 410 
+    mushroomLives: .word 3               # Number of times that a mushroom needs to be blasted before going away
+    mushroomInitQuantity: .word 10       # Initial number of mushrooms to be generated on the screen (maximum)
+
+    # Bug blaster + darts
+    blasterLocation: .word 410           # Initial location of the bug blaster in object grid
+    darts: .word -1:10                   # Array of dart locations where -1 means empty
+    dartLength: .word 10                 # Length of the darts array (maximum number of darts that can be present on the screen)
+    dartColor: .word 0x00ffffff          # Color of darts
+    dartFramesPerMove: .word 1           # Number of frames per movement of the darts
+    # --- END Objects
 
     # Personal Space for Bug Blaster
-    personalSpaceStart: .word 399
-    personalSpaceEnd: .word 441
+    personalSpaceStart: .word 399        # Start position of bug blaster's personal space
+    personalSpaceEnd: .word 441          # End position of bug blaster's personal space
 
     newline: .asciiz "\n"
+    sampleString: .asciiz "Sample String\n"
 
 .globl main
 .text
@@ -70,6 +81,7 @@
 ##############################################
 # # Saved register allocations:
 # # $s0: current frame id (only in game loop and main)
+# # $s6: keyboard pressing indicator for this frame
 # # $s7: display address
 ##############################################
 
@@ -95,17 +107,24 @@ reset_frame:
     j			game_loop_main				# jump to game_loop_main
 
 game_loop_main:
-    # Centipede
+    # Load values
+    lw          $s6, 0xffff0000             # load key-press indicator
+
+    # Mushrooms
     la 		    $a0, mushrooms			    # $a0 = mushrooms
     lw			$a1, mushroomLength			# 
     jal			draw_mushrooms				# jump to draw_mushrooms and save position to $ra
+
+    # Centipede
     move 		$a0, $s0			        # $a0 = $s0
     jal			control_centipede			# jump to control_centipede and save position to $ra
 
+    # Darts
+    move 		$a0, $s0			        # $a0 = $s0
+    jal			control_darts				# jump to control_darts and save position to $ra
+
     # Bug blaster
     jal			control_blaster				# jump to control_blaster and save position to $ra
-
-    # --- END Temporaries
     
     # Frame control
     jal			sleep				        # jump to sleep and save position to $ra
@@ -126,7 +145,6 @@ program_exit:
 ##############################################
 # # Controllers
 ##############################################
-
 # FUN control_centipede
 # ARGS:
 # $a0: current frame number. 
@@ -187,7 +205,6 @@ control_centipede:
 # END FUN control_centipede
 
 # FUN control_blaster
-# ARGS:
 control_blaster:
     addi		$sp, $sp, -20			            # $sp -= 20
     sw			$s0, 16($sp)
@@ -223,6 +240,63 @@ control_blaster:
 
 # END FUN control_blaster
 
+# FUN control_darts
+# ARGS:
+# $a0: current frame number
+control_darts:
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    # Load parameters
+    move 		$s0, $a0			                # $s0 = current frame number
+
+    # Clear old darts on the screen
+    la			$a0, darts			                # $a0 = address of darts
+    lw			$a1, dartLength			            # $a1 = dartLength
+    lw			$a2, backgroundColor			    # $a2 = backgroundColor
+    jal			draw_darts				            # jump to draw_darts and save position to $ra
+
+    # --- Determine if dart should move
+    lw			$s1, dartFramesPerMove  		    # $s1 = dartFramesPerMove
+    div			$s0, $s1			                # $s0 / $s1
+    mfhi	    $t3					                # $t3 = $a0 mod $s1
+    bne			$t3, $zero, end_darts_movement	    # if $t3 != $zero then end_darts_movement
+    # --- END Determine if dart should move
+    
+    # Move darts
+    la			$a0, darts			                # $a0 = address of darts
+    lw			$a1, dartLength			            # $a1 = dartLength
+    jal			move_darts				            # jump to move_darts and save position to $ra
+
+    end_darts_movement:
+    # Check for keystroke and add a new dart if appropriate
+    la		    $a0, darts		                        # 
+    lw		    $a1, dartLength		                    # 
+    lw			$a2, blasterLocation    			    # 
+    jal			shoot_dart_by_keystroke				    # jump to shoot_dart_by_keystroke and save position to $ra
+
+    # Draw new darts
+    la			$a0, darts			                # $a0 = address of darts
+    lw			$a1, dartLength			            # $a1 = dartLength
+    lw			$a2, dartColor      			    # $a2 = dartColor
+    jal			draw_darts				            # jump to draw_darts and save position to $ra
+
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+
+    move 		$v0, $zero			# $v0 = $zero
+    jr			$ra					# jump to $ra
+
+# END FUN control_darts
+
 ##############################################
 # # Logics
 ##############################################
@@ -232,7 +306,7 @@ control_blaster:
 # - "w": move up
 # - "s": move down
 # ARGS:
-# $a0: current blaster location
+# $a0: current blaster location (object grid)
 # RETURN $v0: new location of blaster
 move_blaster_by_keystroke:
     addi		$sp, $sp, -20			    # $sp -= 20
@@ -247,7 +321,7 @@ move_blaster_by_keystroke:
     lw			$s1, screenPixelUnits		# $s1 = screenPixelUnits
 
     # Check if key is pressed
-    lw          $t9, 0xffff0000             # load key-press indicator
+    move        $t9, $s6                    # load key-press indicator
     move 		$v0, $s0			        # $v0 = current blaster location, default return
 	bne         $t9, 1, mbbk_end            # if key is not pressed, end the function
 
@@ -318,6 +392,124 @@ move_blaster_by_keystroke:
     jr			$ra					        # jump to $ra
 
 # END FUN move_blaster_by_keystroke
+
+# FUN shoot_dart_by_keystroke
+# - Modify the darts array by adding a dart with appropriate position (in display grid) to it.
+# - If the maximum allowed number of darts is achieved, then do nothing.
+# ARGS:
+# $a0: address of the darts array
+# $a1: length of darts array
+# $a2: bug blaster location (object grid)
+shoot_dart_by_keystroke:
+    addi		$sp, $sp, -20			    # $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    # Move parameters
+    move 		$s0, $a0			                # $s0 = address of the darts array
+    move 		$s1, $a1			                # $s1 = length of the darts array
+    move 		$s2, $a2			                # $s2 = location of the bug blaster (object grid)
+    lw			$s3, screenPixelUnits			    # $s3 = screenPixelUnits
+
+    # Convert object grid location to display grid location
+    move 		$a0, $s2			                # $a0 = location of the bug blaster (object grid)
+    jal			object_to_display_grid_location	    # jump to object_to_display_grid_location and save position to $ra
+    move 		$s2, $v0			                # $s2 = location of the bug blaster (display grid)
+
+    # Check if key is pressed
+    move        $t9, $s6                            # load key-press indicator
+	bne         $t9, 1, sdbk_end                    # if key is not pressed, end the function
+    
+    # Check type of key being pressed
+    lw			$t9, 0xffff0004			            # load key identifier
+    beq			$t9, 0x78, sdbk_handle_x	        # if $t9 == 0x78 then sdbk_handle_x
+    
+    j			sdbk_end				            # jump to sdbk_end
+
+    sdbk_handle_x:
+        li 		    $t0, 0			                    # $t0 = 0, the loop counter
+        sdbk_handle_x_loop:
+        lw			$t1, 0($s0)			                # get current element in the darts array
+        bne			$t1, -1, sdbk_handle_x_loop_next	# if not empty, go to the next element
+
+        # Position to place dart is one row above the bug blaster
+        sub 		$t2, $s2, $s3			            # $t2 = $s2 - $s3
+        sw			$t2, 0($s0)			            # save dart location
+        j			sdbk_end				            # jump to sdbk_end
+        
+        # Decrement loop counter and go to the next element
+        sdbk_handle_x_loop_next:
+        addi		$t0, $t0, 1			                # decrement loop counter by 1
+        addi		$s0, $s0, 4			                # $s0 = $s0 + 4
+        bne			$t0, $s1, sdbk_handle_x_loop	    # if $t0 != $s1 (length of the darts array) then sdbk_handle_x_loop
+
+    sdbk_end:
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			    # $sp += 20
+
+    move 		$v0, $zero			        # $v0 = $zero
+    jr			$ra					        # jump to $ra
+
+# END FUN shoot_dart_by_keystroke
+
+# FUN move_darts
+# - Move or remove dart on the dart array
+# - Mutates the dart array directly
+# ARGS:
+# $a0: address of dart array
+# $a1: length of dart array
+move_darts:
+    addi		$sp, $sp, -20			    # $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    # Load parameters
+    move 		$s0, $a0			        # $s0 = address of dart array
+    move 		$s1, $a1			        # $s1 = length of dart array
+
+    li			$s3, 0				        # $s3 = 0, loop counter
+
+    move_darts_loop:
+        lw			$t0, 0($s0)			        # load current element to process
+        beq			$t0, -1, move_darts_skip	    # skip if the current dart location is -1 (empty dart)
+        
+        lw			$t1, screenPixelUnits			# load number of pixel units per row
+        sub 		$t0, $t0, $t1			        # $t0 = $t0 - $t1
+        blt			$t0, 0, md_remove_dart	        # if $t0 < 0 then md_remove_dart
+        j			move_darts_finally				# jump to move_darts_finally
+        
+        md_remove_dart:
+        li			$t0, -1				            # $t0 = -1, set to empty dart location
+        
+        move_darts_finally:
+        sw			$t0, 0($s0)                   # save the updated location back to the array
+
+        move_darts_skip:
+        addi		$s3, $s3, 1			            # $s3 = $s3 + 1
+        addi		$s0, $s0, 4			            # $s0 = $s0 + 4
+        bne			$s3, $s1, move_darts_loop	    # if $s3 != $s1 then move_darts_loop
+        
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			    # $sp += 20
+
+    move 		$v0, $zero			        # $v0 = $zero
+    jr			$ra					        # jump to $ra
+
+# END FUN move_darts
 
 # FUN generate_mushrooms
 # Generate and populate the "mushrooms" array based on "mushroomLength"
@@ -847,6 +1039,94 @@ draw_mushroom_at_location:
     jr			$ra					    # jump to $ra
 
 # END FUN draw_mushroom_at_location
+
+# FUN draw_darts
+# ARGS:
+# $a0: address of the darts array
+# $a1: length of the darts array
+# $a2: color of darts
+draw_darts:
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    # Load parameters
+    move 		$s0, $a0			    # $s0 = address of the darts array
+    move 		$s1, $a1			    # $s1 = length of the darts array
+    move 		$s2, $a2			    # $s2 = color of darts
+
+    li			$s3, 0				    # $s3 = 0, loop counter
+    draw_darts_loop:
+        lw			$t0, 0($s0)			        # the current dart location for drawing
+
+        # Draw current dart
+        move 		$a0, $t0			            # $a0 = location
+        move 		$a1, $s2			            # $a1 = dart color
+        jal			draw_dart				        # jump to draw_dart and save position to $ra
+        
+        # Increment loop counter and go to next
+        addi		$s3, $s3, 1			            # $s3 = $s3 + 1
+        addi		$s0, $s0, 4			            # $s0 = $s0 + 4
+        bne			$s3, $s1, draw_darts_loop	    # if $s3 != $s1 then draw_darts_loop
+        
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+
+    move 		$v0, $zero			    # $v0 = $zero
+    jr			$ra					    # jump to $ra
+
+# END FUN draw_darts
+
+# FUN draw_dart
+# ARGS:
+# $a0: location (display grid)
+# $a1: dart color
+draw_dart:
+    addi		$sp, $sp, -20			    # $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    # Load parameter
+    move 		$s0, $a0			        # $s0 = location (display grid)
+    move 		$s1, $a1			        # $s1 = color of dart
+
+    # Do not draw if dart is empty
+    beq			$s0, -1, end_draw_dart	    # if $s0 == -1 then end_draw_dart
+
+    # Calculate display address
+    li 		    $a1, 1			            # $a1 = 1
+    jal			calc_display_address	    # jump to calc_display_address and save position to $ra
+    move 		$t2, $v0			        # $t2 = $v0
+
+    # Load needed values
+    move 		$t0, $s1			        # $t0 = color of dart
+    lw			$t1, screenLineWidth	    # $t1 = screenLineWidth
+
+    # Draw dart
+    sw			$t0, 4($t2)
+
+    end_draw_dart:
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			    # $sp += 20
+
+    move 		$v0, $zero			        # $v0 = $zero
+    jr			$ra					        # jump to $ra
+
+# END FUN draw_dart
 
 ##############################################
 # # Utilities
