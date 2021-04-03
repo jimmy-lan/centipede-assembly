@@ -35,7 +35,7 @@
     unitWidth: .word 12             # Width of "unit"
     screenLineWidth: .word 256      # Width of pixels in a line of screen
     screenLineUnusedWidth: .word 4  # Width of pixels per line that is unused
-    framesPerSecond: .word 20       # Number of frames per second (Note: 1000 / framesPerSecond should be an int)
+    framesPerSecond: .word 25       # Number of frames per second (Note: 1000 / framesPerSecond should be an int)
 
     # Colors
     backgroundColor: .word 0x00000000
@@ -50,7 +50,7 @@
     centipedeLocationEmpty: .word -1     # Location value to indicate a "dead" centipede segment
     centipedeDirections: .word 1:10      # 1: goes right, -1: goes left
     centipedeLength: .word 10
-    centipedeFramesPerMove: .word 4      # Number of frames per movement of the centipede
+    centipedeFramesPerMove: .word 5      # Number of frames per movement of the centipede
 
     # Mushrooms
     mushrooms: .word 0:399               # Mushrooms will only exist in the first 19 rows (19 * 21)
@@ -81,6 +81,7 @@
 ##############################################
 # # Saved register allocations:
 # # $s0: current frame id (only in game loop and main)
+# # $s6: keyboard pressing indicator for this frame
 # # $s7: display address
 ##############################################
 
@@ -106,6 +107,9 @@ reset_frame:
     j			game_loop_main				# jump to game_loop_main
 
 game_loop_main:
+    # Load values
+    lw          $s6, 0xffff0000             # load key-press indicator
+
     # Mushrooms
     la 		    $a0, mushrooms			    # $a0 = mushrooms
     lw			$a1, mushroomLength			# 
@@ -317,7 +321,7 @@ move_blaster_by_keystroke:
     lw			$s1, screenPixelUnits		# $s1 = screenPixelUnits
 
     # Check if key is pressed
-    lw          $t9, 0xffff0000             # load key-press indicator
+    move        $t9, $s6                    # load key-press indicator
     move 		$v0, $s0			        # $v0 = current blaster location, default return
 	bne         $t9, 1, mbbk_end            # if key is not pressed, end the function
 
@@ -416,7 +420,7 @@ shoot_dart_by_keystroke:
     move 		$s2, $v0			                # $s2 = location of the bug blaster (display grid)
 
     # Check if key is pressed
-    lw          $t9, 0xffff0000                     # load key-press indicator
+    move        $t9, $s6                            # load key-press indicator
 	bne         $t9, 1, sdbk_end                    # if key is not pressed, end the function
     
     # Check type of key being pressed
