@@ -1015,7 +1015,8 @@ draw_mushroom_at_location:
 # FUN draw_darts
 # ARGS:
 # $a0: address of the darts array
-# $a1: color of darts
+# $a1: length of the darts array
+# $a2: color of darts
 draw_darts:
     addi		$sp, $sp, -20			# $sp -= 20
     sw			$s0, 16($sp)
@@ -1026,7 +1027,16 @@ draw_darts:
 
     # Load parameters
     move 		$s0, $a0			    # $s0 = address of the darts array
-    move 		$s1, $a1			    # $s1 = color of darts
+    move 		$s1, $a1			    # $s1 = length of the darts array
+    move 		$s2, $a2			    # $s2 = color of darts
+
+    li			$s3, 0				    # $s3 = 0, loop counter
+    draw_darts_loop:
+
+        addi		$s3, $s3, 1			# $s3 = $s3 + 1
+        bne			$s3, $, target	# if $s3 != $ then target
+        
+        
 
     lw			$s0, 16($sp)
     lw			$s1, 12($sp)
