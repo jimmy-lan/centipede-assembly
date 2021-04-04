@@ -177,6 +177,8 @@ enforce_game_rules:
     
     jal			detect_mushroom_dart_collision	    # jump to detect_mushroom_dart_collision and save position to $ra
 
+    jal			detect_centipede_blaster_collision  # jump to detect_centipede_blaster_collision and save position to $ra
+
     lw			$s0, 16($sp)
     lw			$s1, 12($sp)
     lw			$s2, 8($sp)
