@@ -35,7 +35,7 @@
     unitWidth: .word 12             # Width of "unit"
     screenLineWidth: .word 256      # Width of pixels in a line of screen
     screenLineUnusedWidth: .word 4  # Width of pixels per line that is unused
-    framesPerSecond: .word 30       # Number of frames per second (Note: 1000 / framesPerSecond should be an int)
+    framesPerSecond: .word 60       # Number of frames per second (Note: 1000 / framesPerSecond should be an int)
 
     # Colors
     backgroundColor: .word 0x00000000
@@ -52,7 +52,7 @@
     centipedeLocationEmpty: .word -1     # Location value to indicate a "dead" centipede segment
     centipedeDirections: .word 1:10      # 1: goes right, -1: goes left
     centipedeLength: .word 10
-    centipedeFramesPerMove: .word 6      # Number of frames per movement of the centipede
+    centipedeFramesPerMove: .word 3      # Number of frames per movement of the centipede
 
     # Mushrooms
     mushrooms: .word 0:399               # Mushrooms will only exist in the first 19 rows (19 * 21)
@@ -231,19 +231,34 @@ detect_centipede_dart_collision:
         li			$t0, -1				                # $t0 = -1
         sw			$t0, 0($s1)			                # save empty dart location
         
-        # Add mushroom at location
+        # --- Add mushroom at location if possible
+        # Do not add mushroom if we are in personal space
+        lw			$t1, personalSpaceStart			    # 
+        bge			$t3, $t1, dcdc_personal_space	    # if $t3 >= $t1 then dcdc_personal_space
+        # Otherwise, add mushroom
         li			$t0, 4				                # $t0 = 4
         mult	    $t3, $t0			                # $t3 * $t0 = Hi and Lo registers
         mflo	    $t0					                # copy Lo to $t0
         lw			$t1, mushroomLives			        # $t1 = mushroomLives
         sw			$t1, mushrooms($t0)			        # add mushroom at the collision location
+        j			dcdc_add_mushroom_end				# jump to dcdc_add_mushroom_end
+
+        dcdc_personal_space:
+        # Since a new mushroom would not be formed in personal space
+        # and rendering optimization is in place,
+        # we need to manually remove the drawings in collision position
+        move 		$a0, $t3			                # $a0 = $t3
+        jal			fill_background_at_location		    # jump to fill_background_at_location and save position to $ra
+
+        dcdc_add_mushroom_end:
+        # --- END Add mushroom at location if possible
         
         # Increment loop counter and go to next
         dcdc_loop_continue:
         addi		$s0, $s0, 1			                # increment loop counter
         addi		$s1, $s1, 4			                # $s1 = $s1 + 4
         lw			$t5, dartLength			            # $t5 = dartLength
-        blt			$s0, $t5, dmdc_loop	                # if $s0 < $s1 then dmdc_loop
+        blt			$s0, $t5, dcdc_loop	                # if $s0 < $s1 then dcdc_loop
 
     lw			$s0, 16($sp)
     lw			$s1, 12($sp)
@@ -283,16 +298,20 @@ detect_mushroom_dart_collision:
         jal			display_to_object_grid_location		# jump to display_to_object_grid_location and save position to $ra
         move 		$t3, $v0			                # $t3 = $v0
 
+        # If the current dart is inside of personal space, then it will not hit a mushroom
+        lw			$t1, personalSpaceStart			    # 
+        bge			$t3, $t1, dmdc_loop_continue	    # if $t3 >= $t1 then dmdc_loop_continue
+
         # Set $t9 to array accessing index
         # Post-condition: $t9 = $s2 * 4
         li		    $t9, 4			                    # $t9 = 4
         mult	    $t3, $t9			                # $t3 * $t9 = Hi and Lo registers
         mflo	    $t9					                # copy Lo to $t9
 
-        # Check if a mushroom exits in this location
+        # Check if a mushroom exists in this location
         lw			$t0, mushrooms($t9)		            # 
 
-        # If a mushroom exits at location, respond to collision event
+        # If a mushroom exists at location, respond to collision event
         # Otherwise, continue to the next dart
         beq			$t0, $zero, dmdc_loop_continue	    # if $t0 == $zero then dmdc_loop_continue
         # --- Respond to collision
