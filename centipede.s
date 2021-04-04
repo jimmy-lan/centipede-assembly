@@ -436,7 +436,7 @@ detect_centipede_blaster_collision:
         # Increment loop counter
         addi		$s0, $s0, 4			                # advance to next element
         addi		$s2, $s2, 1			                # $s2 = $s2 + 1
-        blt			$s2, $s1, dcdc_loop	                # if $s2 < $s1 then dcdc_loop
+        blt			$s2, $s1, dcbc_loop	                # if $s2 < $s1 then dcbc_loop
 
     lw			$s0, 16($sp)
     lw			$s1, 12($sp)
