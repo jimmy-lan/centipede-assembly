@@ -37,7 +37,7 @@
     screenLineUnusedWidth: .word 4  # Width of pixels per line that is unused
     framesPerSecond: .word 60       # Number of frames per second (Note: 1000 / framesPerSecond should be an int)
 
-    # Colors
+    # --- Colors
     backgroundColor: .word 0x00000000
     centipedeColor: .word 0x00f7a634
     centipedeHeadColor: .word 0x00e09b3a
@@ -45,6 +45,10 @@
     mushroomColor: .word 0x0076c0d6
     blasterColor: .word 0x00ffffff
     dartColor: .word 0x00ffffff
+
+    gameOverTextColor: .word 0x00fc037f
+    winTextColor: .word 0x0010e858
+    # --- END Colors
 
     # --- Objects
     # Centipede
@@ -1210,7 +1214,7 @@ fill_color_squares:
     fill_color_squares_loop:
         lw			$a0, 0($s0)			                # load current position
         move 		$a1, $s2			                # $a1 = color to fill
-        
+
         jal			fill_color_at_location				# jump to fill_color_at_location and save position to $ra
     
         # Increment loop counter
