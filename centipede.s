@@ -47,7 +47,7 @@
     dartColor: .word 0x00ffffff
 
     gameOverTextColor: .word 0x00fc037f
-    winTextColor: .word 0x0010e858
+    gameWonTextColor: .word 0x0010e858
     # --- END Colors
 
     # --- Objects
@@ -79,6 +79,8 @@
     # Texts On Screen
     gameOverTextLocations: .word 128, 129, 130, 131, 149, 170, 191, 212, 213, 214, 215, 233, 254, 275, 296, 297, 298, 299, 134, 138, 155, 156, 159, 176, 177, 180, 197, 198, 199, 201, 218, 220, 222, 239, 241, 242, 243, 260, 263, 264, 281, 284, 285, 302, 306, 141, 142, 143, 162, 164, 165, 183, 186, 204, 208, 225, 229, 246, 250, 267, 270, 288, 290, 291, 309, 310, 311
     gameOverTextLength: .word 67
+    gameWonTextLocations: .word 148, 169, 190, 211, 232, 254, 192, 213, 234, 256, 152, 173, 194, 215, 236, 176, 197, 218, 239, 156, 157, 261, 262, 179, 200, 221, 242, 161, 182, 203, 224, 245, 266, 183, 204, 205, 226, 227, 248, 165, 186, 207, 228, 249, 270, 316, 317, 318, 319, 320, 321, 322, 323, 324, 325, 326, 327, 328, 329, 330, 331, 332, 333
+    gameWonTextLength: .word 63
 
     # Strings for logging
     newline: .asciiz "\n"
@@ -233,6 +235,41 @@ detect_centipede_clear_off:
     jr			$ra					    # jump to $ra
 
 # END FUN detect_centipede_clear_off
+
+# FUN game_won
+# - Invoke when player won the game.
+# ARGS:
+game_won:
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    # Clear the screen
+    jal			clear_screen_drawings				# jump to clear_screen_drawings and save position to $ra
+    
+    # Fill game over text
+    la			$a0, gameWonTextLocations			# 
+    lw			$a1, gameWonTextLength			    # 
+    lw			$a2, gameWonTextColor			    # 
+    jal			fill_color_squares				    # jump to fill_color_squares and save position to $ra
+    
+    # Terminate program
+    j			program_exit				        # jump to program_exit
+
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+
+    move 		$v0, $zero			# $v0 = $zero
+    jr			$ra					# jump to $ra
+
+# END FUN game_won
 
 # FUN game_over
 # ARGS:
