@@ -140,6 +140,16 @@ game_loop_main:
 
 ############################################################################################
 
+program_exit:
+	li $v0, 10                              # terminate the program gracefully
+	syscall
+
+############################################################################################
+
+##############################################
+# # Game Rules
+##############################################
+
 # FUN enforce_game_rules
 # - This function should be ran for every cycle of the main game loop.
 # - This function checks the current state of the game and mutate objects based on
@@ -170,13 +180,29 @@ enforce_game_rules:
 
 # END FUN enforce_game_rules
 
-############################################################################################
+# FUN game_over
+# ARGS:
+game_over:
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
 
-program_exit:
-	li $v0, 10                              # terminate the program gracefully
-	syscall
+    
 
-############################################################################################
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+
+    move 		$v0, $zero			# $v0 = $zero
+    jr			$ra					# jump to $ra
+
+# END FUN game_over
 
 ##############################################
 # # Collision Detection
@@ -233,8 +259,8 @@ detect_centipede_dart_collision:
         sw			$t0, 0($s1)			                # save empty dart location
         
         # --- Add mushroom at location if possible
-        # Do not add mushroom if we are in personal space
-        lw			$t1, personalSpaceStart			    # 
+        # Do not add mushroom if we are outside of mushroom area
+        lw			$t1, mushroomLength			        # 
         bge			$t3, $t1, dcdc_personal_space	    # if $t3 >= $t1 then dcdc_personal_space
         # Otherwise, add mushroom
         li			$t0, 4				                # $t0 = 4
@@ -299,8 +325,8 @@ detect_mushroom_dart_collision:
         jal			display_to_object_grid_location		# jump to display_to_object_grid_location and save position to $ra
         move 		$t3, $v0			                # $t3 = $v0
 
-        # If the current dart is inside of personal space, then it will not hit a mushroom
-        lw			$t1, personalSpaceStart			    # 
+        # If the current dart outside of the mushroom area, skip
+        lw			$t1, mushroomLength 			    # 
         bge			$t3, $t1, dmdc_loop_continue	    # if $t3 >= $t1 then dmdc_loop_continue
 
         # Set $t9 to array accessing index
@@ -512,7 +538,7 @@ control_darts:
 # END FUN control_darts
 
 ##############################################
-# # Logics
+# # Object Movement Logic
 ##############################################
 # FUN move_blaster_by_keystroke
 # - "j": move left
