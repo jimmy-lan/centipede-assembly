@@ -153,6 +153,8 @@ enforce_game_rules:
     sw			$s3, 4($sp)
     sw			$ra, 0($sp)
 
+    jal			detect_centipede_dart_collision		# jump to detect_centipede_dart_collision and save position to $ra
+    
     jal			detect_mushroom_dart_collision	    # jump to detect_mushroom_dart_collision and save position to $ra
 
     lw			$s0, 16($sp)
@@ -191,31 +193,28 @@ detect_centipede_dart_collision:
     sw			$ra, 0($sp)
 
     li			$s0, 0				            # loop counter, correspond to index in darts array
-    lw			$s1, dartLength			        # $s1 = dartLength
+    la			$s1, darts			            # $s1 = darts
     dcdc_loop:
         # Load current dart
-        li			$s3, 4				                # $s3 = 4
-        mult	    $s0, $s3			                # $s0 * $s3 = Hi and Lo registers
-        mflo	    $s3					                # copy Lo to $s3
-        lw			$s2, darts($s3)			            # 
+        lw			$t3, 0($s1)		                    # 
 
         # If the current dart is empty, continue to next
-        beq			$s2, -1, dcdc_loop_continue	        # if $s2 == -1 then dmdc_loop_continue
+        beq			$t3, -1, dcdc_loop_continue	        # if $t3 == -1 then dmdc_loop_continue
 
         # Convert location to object grid
-        # Post-condition: $s2 = dart location in object grid
-        move 		$a0, $s2			                # $a0 = $s2
+        # Post-condition: $t3 = dart location in object grid
+        move 		$a0, $t3			                # $a0 = $t3
         jal			display_to_object_grid_location		# jump to display_to_object_grid_location and save position to $ra
-        move 		$s2, $v0			                # $s2 = $v0
+        move 		$t3, $v0			                # $t3 = $v0
 
         # Check if dart hits a centipede segment
-        lw			$t6, centipedeLocations			    #
+        la			$t6, centipedeLocations			    #
         lw			$t8, centipedeLength			    # 
         li			$t9, 0				                # loop counter
         
         dcdc_centipede_loop:
             lw			$t0, 0($t6)			                        # load a centipede segment location
-            beq			$t0, $s2, dcdc_handle_centipede_collision	# if $t0 == $s2 then dcdc_handle_centipede_collision
+            beq			$t0, $t3, dcdc_handle_centipede_collision	# if $t0 == $t3 then dcdc_handle_centipede_collision
             addi		$t6, $t6, 4			                        # $t6 = $t6 + 4
             addi		$t9, $t9, 1			                        # $t9 = $t9 + 1
             blt			$t9, $t8, dcdc_centipede_loop	            # if $t9 < $t8 then dcdc_centipede_loop
@@ -224,20 +223,17 @@ detect_centipede_dart_collision:
         
         dcdc_handle_centipede_collision:
         # $t6 stores the pointer to the centipede segment involved in the collision
-        # darts($s3) stores the location of dart involved in the collision
-
-        # Perserve the location of collision
-        lw			$t9, darts($s3)
+        # $t3 stores the location of dart involved in the collision
 
         # Remove centipede segment and dart
         lw			$t0, centipedeLocationEmpty			# $t0 = centipedeLocationEmpty
         sw			$t0, 0($t6)			                # save empty centipede location
         li			$t0, -1				                # $t0 = -1
-        sw			$t0, darts($s3)			            # save empty dart location
+        sw			$t0, 0($s1)			                # save empty dart location
         
         # Add mushroom at location
         li			$t0, 4				                # $t0 = 4
-        mult	    $t9, $t0			                # $t9 * $t0 = Hi and Lo registers
+        mult	    $t3, $t0			                # $t3 * $t0 = Hi and Lo registers
         mflo	    $t0					                # copy Lo to $t0
         lw			$t1, mushroomLives			        # $t1 = mushroomLives
         sw			$t1, mushrooms($t0)			        # add mushroom at the collision location
@@ -245,7 +241,9 @@ detect_centipede_dart_collision:
         # Increment loop counter and go to next
         dcdc_loop_continue:
         addi		$s0, $s0, 1			                # increment loop counter
-        blt			$s0, $s1, dmdc_loop	                # if $s0 < $s1 then dmdc_loop
+        addi		$s1, $s1, 4			                # $s1 = $s1 + 4
+        lw			$t5, dartLength			            # $t5 = dartLength
+        blt			$s0, $t5, dmdc_loop	                # if $s0 < $s1 then dmdc_loop
 
     lw			$s0, 16($sp)
     lw			$s1, 12($sp)
@@ -272,31 +270,27 @@ detect_mushroom_dart_collision:
     sw			$ra, 0($sp)
 
     li 		    $s0, 0			            # loop counter, correspond to index in darts array
-    lw			$s1, dartLength			    # $s1 = dartLength
+    la			$s1, darts			        # $s1 = address of darts
     dmdc_loop:
-        # Load current dart
-        li			$s3, 4				                # $s3 = 4
-        mult	    $s0, $s3			                # $s0 * $s3 = Hi and Lo registers
-        mflo	    $s3					                # copy Lo to $s3
-        lw			$s2, darts($s3)			            # 
+        lw			$t3, 0($s1)			                # load current dart
 
         # If the current dart is empty, continue to next
-        beq			$s2, -1, dmdc_loop_continue	        # if $s2 == -1 then dmdc_loop_continue
+        beq			$t3, -1, dmdc_loop_continue	        # if $t3 == -1 then dmdc_loop_continue
         
         # Convert location to object grid
-        # Post-condition: $s2 = dart location in object grid
-        move 		$a0, $s2			                # $a0 = $s2
+        # Post-condition: $t3 = dart location in object grid
+        move 		$a0, $t3			                # $a0 = $t3
         jal			display_to_object_grid_location		# jump to display_to_object_grid_location and save position to $ra
-        move 		$s2, $v0			                # $s2 = $v0
+        move 		$t3, $v0			                # $t3 = $v0
 
         # Set $t9 to array accessing index
         # Post-condition: $t9 = $s2 * 4
         li		    $t9, 4			                    # $t9 = 4
-        mult	    $s2, $t9			                # $s2 * $t9 = Hi and Lo registers
+        mult	    $t3, $t9			                # $t3 * $t9 = Hi and Lo registers
         mflo	    $t9					                # copy Lo to $t9
 
         # Check if a mushroom exits in this location
-        lw			$t0, mushrooms($t9)			        # 
+        lw			$t0, mushrooms($t9)		            # 
 
         # If a mushroom exits at location, respond to collision event
         # Otherwise, continue to the next dart
@@ -314,19 +308,21 @@ detect_mushroom_dart_collision:
         j			dmdc_remove_mushroom_end			# jump to dmdc_remove_mushroom_end
         
         dmdc_remove_mushroom:
-        move 		$a0, $s2			                # $a0 = $s2 (dart object-grid location)
+        move 		$a0, $t3			                # $a0 = $t3 (dart object-grid location)
         jal			fill_background_at_location			# jump to fill_background_at_location and save position to $ra
 
         dmdc_remove_mushroom_end:
         # Remove dart
         li			$t1, -1				                # $t1 = -1
-        sw			$t1, darts($s3)			            # save empty dart
+        sw			$t1, 0($s1)			            # save empty dart
         # --- END Respond to collision
 
         # Increment loop counter and go to next
         dmdc_loop_continue:
         addi		$s0, $s0, 1			                # increment loop counter
-        blt			$s0, $s1, dmdc_loop	                # if $s0 < $s1 then dmdc_loop
+        addi		$s1, $s1, 4			                # $s1 = $s1 + 4
+        lw			$t5, dartLength			            # 
+        blt			$s0, $t5, dmdc_loop	                # if $s0 < $t5 then dmdc_loop
 
     lw			$s0, 16($sp)
     lw			$s1, 12($sp)
