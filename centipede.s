@@ -203,8 +203,25 @@ detect_centipede_clear_off:
     sw			$s3, 4($sp)
     sw			$ra, 0($sp)
 
-    
+    la			$s0, centipedeLocations			# 
+    lw			$s1, centipedeLength			# 
+    li			$s2, 0				            # $s2 = 0, the loop counter
 
+    dcco_loop:
+        lw			$t0, 0($s0)			        # load current segment location (object grid)
+        
+        # If current segment exists, then the centipede is not cleared off
+        bne			$t0, -1, dcco_end	        # if $t0 != -1 then dcco_end
+
+        # Increment loop counter
+        addi		$s0, $s0, 4			        # advance to next element
+        addi		$s2, $s2, 1			        # $s2 = $s2 + 1
+        blt			$s2, $s1, dcco_loop	        # if $s2 < $s1 then dcco_loop
+
+    # Respond to clear off event
+    # TODO
+
+    dcco_end:
     lw			$s0, 16($sp)
     lw			$s1, 12($sp)
     lw			$s2, 8($sp)
@@ -212,8 +229,8 @@ detect_centipede_clear_off:
     lw			$ra, 0($sp)
     addi		$sp, $sp, 20			# $sp += 20
 
-    move 		$v0, $zero			# $v0 = $zero
-    jr			$ra					# jump to $ra
+    move 		$v0, $zero			    # $v0 = $zero
+    jr			$ra					    # jump to $ra
 
 # END FUN detect_centipede_clear_off
 
