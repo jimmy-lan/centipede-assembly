@@ -1188,6 +1188,48 @@ fill_background_at_location:
 
 # END FUN fill_background
 
+# FUN fill_color_squares
+# ARGS:
+# $a0: address of location (object grid) to fill color in
+# $a1: length of the location array
+# $a2: color
+fill_color_squares:
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    move 		$s0, $a0			    # $s0 = address of location (object grid) array
+    move 		$s1, $a1			    # $s1 = length of the location array
+    move 		$s2, $a2			    # $s2 = color to fill in
+
+    li			$s3, 0				    # $s3 = 0, loop counter
+    
+    fill_color_squares_loop:
+        lw			$a0, 0($s0)			                # load current position
+        move 		$a1, $s2			                # $a1 = color to fill
+        
+        jal			fill_color_at_location				# jump to fill_color_at_location and save position to $ra
+    
+        # Increment loop counter
+        addi		$s0, $s0, 4			                # move to next element
+        addi		$s3, $s3, 1			                # increment loop counter
+        blt			$s3, $s1, fill_color_squares_loop	# if $s3 < $s1 then fill_color_squares_loop
+
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+
+    move 		$v0, $zero			    # $v0 = $zero
+    jr			$ra					    # jump to $ra
+
+# END FUN fill_color_squares
+
 # FUN fill_color_at_location
 # ARGS:
 # $a0: location to fill color (object grid)
