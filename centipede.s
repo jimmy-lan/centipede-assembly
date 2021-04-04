@@ -55,8 +55,8 @@
     centipedeFramesPerMove: .word 3      # Number of frames per movement of the centipede
 
     # Mushrooms
-    mushrooms: .word 0:378               # Mushrooms will only exist in the first 19 rows (19 * 21)
-    mushroomLength: .word 378
+    mushrooms: .word 0:399               # Mushrooms will only exist in the first 19 rows (19 * 21)
+    mushroomLength: .word 399
     mushroomLives: .word 4               # Number of times that a mushroom needs to be blasted before going away
     mushroomInitQuantity: .word 15       # Initial number of mushrooms to be generated on the screen (maximum)
 
@@ -68,7 +68,7 @@
     # --- END Objects
 
     # Personal Space for Bug Blaster
-    personalSpaceStart: .word 378        # Start position of bug blaster's personal space
+    personalSpaceStart: .word 357        # Start position of bug blaster's personal space
     personalSpaceEnd: .word 420          # End position of bug blaster's personal space
     personalSpaceLastVerticalMovement: .word 1   # 1: down, -1: up. Should not be modified, used to calculate personal space centipede movement
 
@@ -892,25 +892,56 @@ move_centipede_segment:
     
     j			mcs_reach_border				    # jump to mcs_reach_border
     mcs_reach_border:
-    # --- Check if we are in the last row of the personal space
+    # If we are in the last row of personal space, move up
     lw			$t5, personalSpaceEnd			    # $t5 = personalSpaceEnd
     sub			$t5, $t5, $s2		                # $t5 = $t5 - $s2
-    bge			$s0, $t5, mcs_border_personal_space	# if $s0 >= $t5 then mcs_border_personal_space
+    bge			$s0, $t5, mcs_border_personal_up	# if $s0 >= $t5 then mcs_border_personal_up
 
-    # --- END Check if we are in the last row of the personal space
+    # If we are in personal space but not in the first row of personal space, then
+    # continue the previous movement direction.
+    lw			$t5, personalSpaceStart			    # $t5 = personalSpaceStart
+    add			$t5, $t5, $s2		                # $t5 = $t5 + $s2
+    bge			$s0, $t5, mcs_bps_middle_row	    # if $s0 >= $t5 then mcs_bps_middle_row
+    j			mcs_bps_middle_row_end				# jump to mcs_bps_middle_row_end
     
-    add 		$v0, $s0, $s2			            # $v0 = $s0 + $s2, goes down one row
-    j			end_mcs				                # jump to end_mcs
-    mcs_border_personal_space:
+    # Move based on previous vertical movement
+    mcs_bps_middle_row:
+    lw			$t1, personalSpaceLastVerticalMovement
+    beq			$t1, -1, mcs_border_personal_up	    # if $t1 == -1 then mcs_border_personal_up
+    j			mcs_border_personal_down			# jump to mcs_border_personal_down
+    
+    mcs_bps_middle_row_end:
+
+    # If we are in the first row of the personal space, move down
+    bge			$s0, $t5, mcs_border_personal_down	# if $s0 >= $t5 then mcs_border_personal_down
+    
+    # If we are not in personal space
+    j			mcs_border_personal_end			    # jump to mcs_border_personal_end
+
+    mcs_border_personal_up:
     sub 		$v0, $s0, $s2			            # $v0 = $s0 - $s2, goes up one row
+    # Save the vertical movement direction
+    li			$t1, -1				                # $t1 = -1
+    sw			$t1, personalSpaceLastVerticalMovement
+    j			end_mcs				                # jump to end_mcs
+
+    mcs_border_personal_down:
+    add 		$v0, $s0, $s2			            # $v0 = $s0 + $s2, goes down one row
+    # Save the vertical movement direction
+    li			$t1, 1				                # $t1 = 1
+    sw			$t1, personalSpaceLastVerticalMovement
+    j			end_mcs				                # jump to end_mcs
+
+    mcs_border_personal_end:
+    add 		$v0, $s0, $s2			            # $v0 = $s0 + $s2, goes down one row
     j			end_mcs				                # jump to end_mcs
     
     mcs_border_end_if:
     # --- END Identify if the centipede is about to hit the border
 
     # --- Identify if the centipede is about to hit a mushroom
-    # Do not check for mushrooms if the centipede is in personal space
-    lw			$t5, personalSpaceStart			    # $t4 = personalSpaceStart
+    # Do not check for mushrooms if we are outside of the mushroom generation space
+    lw			$t5, mushroomLength     			    # $t5 = mushroomLength
     bge			$s0, $t5, mcs_mushroom_end    	        # if $s0 >= $t5 then mcs_mushroom_end
     
     # Check if there is a mushroom infront of the centipede
