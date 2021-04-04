@@ -52,7 +52,7 @@
     centipedeLocationEmpty: .word -1     # Location value to indicate a "dead" centipede segment
     centipedeDirections: .word 1:10      # 1: goes right, -1: goes left
     centipedeLength: .word 10
-    centipedeFramesPerMove: .word 3      # Number of frames per movement of the centipede
+    centipedeFramesPerMove: .word 1      # Number of frames per movement of the centipede
 
     # Mushrooms
     mushrooms: .word 0:399               # Mushrooms will only exist in the first 19 rows (19 * 21)
@@ -866,32 +866,63 @@ move_centipede_segment:
     lw			$s2, screenPixelUnits
 
     # --- Identify if the centipede is about to hit the border
+    # Calculate the column number for the right-edge
     subi		$t0, $s2, 1		                    # $t0 = $s2 - 1, the column number for the edge
     # Store the current column number in $t3
     div			$a0, $s2			                # $a0 / $s2
     mfhi	    $t3					                # $t3 = $a0 mod $s2, stores the current column num.
-
-    # Load definitions
-    addi		$t1, $zero, 1			            # $t1 = 1, the right direction indicator
-    addi		$t2, $zero, -1			            # $t2 = -1, the left direction indicator
     
-    beq			$s1, $t1, mcs_border_goes_right	    # if $s1 == $t1 then mcs_border_goes_right
+    beq			$s1, 1, mcs_border_goes_right	    # if $s1 == 1 then mcs_border_goes_right
     mcs_border_goes_left:
-    bne			$t3, $zero, mcs_border_end_if       # if $t3 != $zero then mcs_border_end_if
+    beq			$t3, $zero, mcs_reach_border	    # if $t3 == $zero then mcs_reach_border
+    j			mcs_border_end				        # jump to mcs_border_end
 
-    # If the column number is 0, then the next direction should change to 1 (i.e., goes to right).
-    move 		$v1, $t1			                # $v1 = $t1, set next direction to right
-    
-    j			mcs_reach_border	                # jump to mcs_reach_border
     mcs_border_goes_right:
-    bne			$t3, $t0, mcs_border_end_if	        # if $t3 != $t0 then mcs_border_end_if
+    beq			$t3, $t0, mcs_reach_border  	    # if $t3 == $t0 then mcs_reach_border
+    j			mcs_border_end				        # jump to mcs_border_end
+
+    mcs_border_end:
+
+    # --- END Identify if the centipede is about to hit the border
+
+    # --- Identify if the centipede is about to hit a mushroom
+    # Do not check for mushrooms if we are outside of the mushroom generation space
+    lw			$t5, mushroomLength     			    # $t5 = mushroomLength
+    bge			$s0, $t5, mcs_mushroom_end    	        # if $s0 >= $t5 then mcs_mushroom_end
     
-    # If the column number corresponds to the right edge, then the next direction should change
-    # to -1 (i.e., goes to left).
-    move 		$v1, $t2			                # $v1 = $t2, set next direction to left
+    # Check if there is a mushroom infront of the centipede
+    add			$t0, $s0, $s1		                    # $t0 = $s0 + $s1, next location
+    # Multiply by 4 to access mushroom array
+    addi		$t1, $zero, 4			                # $t1 = $zero + 4
+    mult	    $t0, $t1			                    # $t0 * $t1 = Hi and Lo registers
+    mflo	    $t9					                    # copy Lo to $t9
+    # Check and branch if there is mushroom infront of the centipede
+    lw			$t1, mushrooms($t9)			            # 
+    beq			$t1, $zero, mcs_mushroom_end    	    # if $t1 == $zero then mcs_mushroom_end
     
-    j			mcs_reach_border				    # jump to mcs_reach_border
+    # If the centipede hits a mushroom, the logic is the same as hitting the border
+    j			mcs_reach_border				        # jump to mcs_reach_border
+    
+    mcs_mushroom_end:
+    j			mcs_reach_border_end				# jump to mcs_reach_border_end
+    # --- END Identify if the centipede is about to hit a mushroom
+
+    # --- Reach border logic
     mcs_reach_border:
+    # --- Toggle direction
+    beq			$s1, -1, mcs_border_change_right	# if $s1 == left then mcs_border_change_right
+    
+    mcs_border_change_left:
+    li			$v1, -1				                # $v1 = -1
+    j			mcs_border_change_end				# jump to mcs_border_change_end
+    
+    mcs_border_change_right:
+    li			$v1, 1				                # $v1 = 1
+    j			mcs_border_change_end				# jump to mcs_border_change_end
+    
+    mcs_border_change_end:
+    # --- END Toggle direction
+
     # If we are in the last row of personal space, move up
     lw			$t5, personalSpaceEnd			    # $t5 = personalSpaceEnd
     sub			$t5, $t5, $s2		                # $t5 = $t5 - $s2
@@ -913,6 +944,7 @@ move_centipede_segment:
     mcs_bps_middle_row_end:
 
     # If we are in the first row of the personal space, move down
+    lw			$t5, personalSpaceStart			    # $t5 = personalSpaceStart
     bge			$s0, $t5, mcs_border_personal_down	# if $s0 >= $t5 then mcs_border_personal_down
     
     # If we are not in personal space
@@ -936,38 +968,9 @@ move_centipede_segment:
     add 		$v0, $s0, $s2			            # $v0 = $s0 + $s2, goes down one row
     j			end_mcs				                # jump to end_mcs
     
-    mcs_border_end_if:
-    # --- END Identify if the centipede is about to hit the border
+    mcs_reach_border_end:
 
-    # --- Identify if the centipede is about to hit a mushroom
-    # Do not check for mushrooms if we are outside of the mushroom generation space
-    lw			$t5, mushroomLength     			    # $t5 = mushroomLength
-    bge			$s0, $t5, mcs_mushroom_end    	        # if $s0 >= $t5 then mcs_mushroom_end
-    
-    # Check if there is a mushroom infront of the centipede
-    add			$t0, $s0, $s1		                # $t0 = $s0 + $s1, next location
-    # Multiply by 4 to access mushroom array
-    addi		$t1, $zero, 4			            # $t1 = $zero + 4
-    mult	    $t0, $t1			                # $t0 * $t1 = Hi and Lo registers
-    mflo	    $t9					                # copy Lo to $t9
-    # Check and branch if there is mushroom infront of the centipede
-    lw			$t1, mushrooms($t9)			        # 
-    beq			$t1, $zero, mcs_mushroom_end    	# if $t1 == $zero then mcs_mushroom_end
-    
-    # Go to the next line and change direction	    # 
-    addi		$t0, $zero, -1			            # $t0 = direction left
-    add 		$v0, $s0, $s2			            # $v0 = $s0 + $s2, goes to the next line
-    beq			$s1, $t0, mcs_mushroom_goes_left	# if $s1 == $t0 then mcs_mushroom_goes_left
-    mcs_mushroom_goes_right:
-    li 		    $v1, -1 			                # $v1 = direction left
-    j			end_mcs				                # jump to end_mcs
-    
-    mcs_mushroom_goes_left:
-    li 		    $v1, 1  			                # $v1 = direction right
-    j			end_mcs				                # jump to end_mcs
-
-    mcs_mushroom_end:
-    # --- END Identify if the centipede is about to hit a mushroom
+    # --- END Reach border logic
 
     # If none of the above turning conditions are met
     end_turning_condition_checks:
