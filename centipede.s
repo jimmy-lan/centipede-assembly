@@ -1223,6 +1223,59 @@ fill_background_at_location:
 
 # END FUN fill_background
 
+# FUN fill_color_at_location
+# ARGS:
+# $a0: location to fill color (object grid)
+# $a1: color
+fill_color_at_location:
+    addi		$sp, $sp, -20			    # $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    move 		$s0, $a0			        # $s0 = position to fill color (object grid)
+    move 		$s1, $a1			        # $s1 = color to be filled
+
+    # Calc address
+    move 		$a1, $zero			        # $a1 = $zero
+    jal			calc_display_address	    # jump to calc_display_address and save position to $ra
+    move 		$t2, $v0			        # $t2 = $v0
+
+    # Load colors
+    lw			$t1, screenLineWidth	    # $t1 = screenLineWidth
+
+    # Draw background color at requested location
+    # First line
+    sw			$s1, 0($t2)
+    sw			$s1, 4($t2)
+    sw			$s1, 8($t2)
+
+    # Second line
+    add 		$t2, $t2, $t1			# $t2 = $t2 + $t1, goes to the next line at this location
+    sw			$s1, 0($t2)
+    sw			$s1, 4($t2)
+    sw			$s1, 8($t2)
+
+    # Third line
+    add 		$t2, $t2, $t1			# $t2 = $t2 + $t1, goes to the next line at this location
+    sw			$s1, 0($t2)
+    sw			$s1, 4($t2)
+    sw			$s1, 8($t2)
+
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			    # $sp += 20
+
+    move 		$v0, $zero			        # $v0 = $zero
+    jr			$ra					        # jump to $ra
+
+# END FUN fill_color_at_location
+
 # FUN draw_mushrooms
 # ARGS:
 # $a0: address of array storing all mushrooms
