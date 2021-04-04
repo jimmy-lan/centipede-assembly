@@ -166,10 +166,10 @@ detect_mushroom_dart_collision:
     lw			$s1, dartLength			    # $s1 = dartLength
     dmdc_loop:
         # Load current dart
-        li			$t9, 4				                # $t9 = 4
-        mult	    $s0, $t9			                # $s0 * $t9 = Hi and Lo registers
-        mflo	    $t9					                # copy Lo to $t9
-        lw			$s2, darts($t9)			            # 
+        li			$s3, 4				                # $s3 = 4
+        mult	    $s0, $s3			                # $s0 * $s3 = Hi and Lo registers
+        mflo	    $s3					                # copy Lo to $s3
+        lw			$s2, darts($s3)			            # 
 
         # If the current dart is empty, continue to next
         beq			$s2, -1, dmdc_loop_continue	        # if $s2 == -1 then dmdc_loop_continue
@@ -180,28 +180,38 @@ detect_mushroom_dart_collision:
         jal			display_to_object_grid_location		# jump to display_to_object_grid_location and save position to $ra
         move 		$s2, $v0			                # $s2 = $v0
 
-        # Update $s2 to array accessing index
-        # Post-condition: $s2 = dart location in object grid * 4
+        # Set $t9 to array accessing index
+        # Post-condition: $t9 = $s2 * 4
         li		    $t9, 4			                    # $t9 = 4
         mult	    $s2, $t9			                # $s2 * $t9 = Hi and Lo registers
-        mflo	    $s2					                # copy Lo to $s2
+        mflo	    $t9					                # copy Lo to $t9
 
         # Check if a mushroom exits in this location
-        lw			$t0, mushrooms($s2)			        # 
+        lw			$t0, mushrooms($t9)			        # 
 
         # If a mushroom exits at location, respond to collision event
         # Otherwise, continue to the next dart
         beq			$t0, $zero, dmdc_loop_continue	    # if $t0 == $zero then dmdc_loop_continue
         # --- Respond to collision
 
+        # Subtract "lives" from the targeted mushroom
         subi		$t0, $t0, 1			                # record mushroom being shot once
-        sw			$t0, mushrooms($s2)			        # save back record
+        sw			$t0, mushrooms($t9)			        # save back record
+
+        # Due to rendering optimization, mushrooms with a 0 live will be skipped
+        # when painting the screen on the next game loop iteration. Therefore, here
+        # we explitcitly check for it to correctly remove the target mushroom.
+        beq			$t0, $zero, dmdc_remove_mushroom	# if $t0 == $zero then dmdc_remove_mushroom
+        j			dmdc_remove_mushroom_end			# jump to dmdc_remove_mushroom_end
+        
+        dmdc_remove_mushroom:
+        move 		$a0, $s2			                # $a0 = $s2 (dart object-grid location)
+        jal			fill_background_at_location			# jump to fill_background_at_location and save position to $ra
+
+        dmdc_remove_mushroom_end:
         # Remove dart
-        li			$t9, 4				                # $t9 = 4
-        mult	    $s0, $t9			                # $s0 * $t9 = Hi and Lo registers
-        mflo	    $t9					                # copy Lo to $t9
         li			$t1, -1				                # $t1 = -1
-        sw			$t1, darts($t9)			            # save empty dart
+        sw			$t1, darts($s3)			            # save empty dart
         # --- END Respond to collision
 
         # Increment loop counter and go to next
