@@ -221,7 +221,7 @@ detect_centipede_clear_off:
         blt			$s2, $s1, dcco_loop	        # if $s2 < $s1 then dcco_loop
 
     # Respond to clear off event
-    # TODO
+    jal			game_won				        # jump to game_won and save position to $ra
 
     dcco_end:
     lw			$s0, 16($sp)
