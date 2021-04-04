@@ -55,10 +55,10 @@
     centipedeFramesPerMove: .word 3      # Number of frames per movement of the centipede
 
     # Mushrooms
-    mushrooms: .word 0:399               # Mushrooms will only exist in the first 19 rows (19 * 21)
-    mushroomLength: .word 399
+    mushrooms: .word 0:378               # Mushrooms will only exist in the first 19 rows (19 * 21)
+    mushroomLength: .word 378
     mushroomLives: .word 4               # Number of times that a mushroom needs to be blasted before going away
-    mushroomInitQuantity: .word 10       # Initial number of mushrooms to be generated on the screen (maximum)
+    mushroomInitQuantity: .word 15       # Initial number of mushrooms to be generated on the screen (maximum)
 
     # Bug blaster + darts
     blasterLocation: .word 410           # Initial location of the bug blaster in object grid
@@ -68,8 +68,9 @@
     # --- END Objects
 
     # Personal Space for Bug Blaster
-    personalSpaceStart: .word 399        # Start position of bug blaster's personal space
-    personalSpaceEnd: .word 441          # End position of bug blaster's personal space
+    personalSpaceStart: .word 378        # Start position of bug blaster's personal space
+    personalSpaceEnd: .word 420          # End position of bug blaster's personal space
+    personalSpaceLastVerticalMovement: .word 1   # 1: down, -1: up. Should not be modified, used to calculate personal space centipede movement
 
     newline: .asciiz "\n"
     sampleString: .asciiz "Sample String\n"
@@ -864,17 +865,6 @@ move_centipede_segment:
     # Main idea: continue the current direction if "turning conditions" are not met
     lw			$s2, screenPixelUnits
 
-    # --- Identify if the centipede is in personal space
-    lw			$t5, personalSpaceStart			    # $t4 = personalSpaceStart
-    li			$s3, 0				                # $s3 = 0, a boolean value indicating whether we are in personal space
-    ble			$s0, $t5, mcs_space_end    	        # if $s0 <= $t5 then mcs_space_end
-
-    mcs_personal_space:
-    li			$s3, 1				                # $s3 = 1
-    
-    mcs_space_end:
-    # --- END Identify if the centipede is in personal space
-
     # --- Identify if the centipede is about to hit the border
     subi		$t0, $s2, 1		                    # $t0 = $s2 - 1, the column number for the edge
     # Store the current column number in $t3
@@ -902,10 +892,12 @@ move_centipede_segment:
     
     j			mcs_reach_border				    # jump to mcs_reach_border
     mcs_reach_border:
-    # --- Check if we are now in the pesonal space for bug blaster
-    bne			$s3, $zero, mcs_border_personal_space    # if $s3 != $zero then mcs_border_personal_space
+    # --- Check if we are in the last row of the personal space
+    lw			$t5, personalSpaceEnd			    # $t5 = personalSpaceEnd
+    sub			$t5, $t5, $s2		                # $t5 = $t5 - $s2
+    bge			$s0, $t5, mcs_border_personal_space	# if $s0 >= $t5 then mcs_border_personal_space
 
-    # --- END Check if we are now in the pesonal space for bug blaster
+    # --- END Check if we are in the last row of the personal space
     
     add 		$v0, $s0, $s2			            # $v0 = $s0 + $s2, goes down one row
     j			end_mcs				                # jump to end_mcs
@@ -918,7 +910,8 @@ move_centipede_segment:
 
     # --- Identify if the centipede is about to hit a mushroom
     # Do not check for mushrooms if the centipede is in personal space
-    bne			$s3, $zero, mcs_mushroom_end	    # if $s3 != $zero then mcs_mushroom_end
+    lw			$t5, personalSpaceStart			    # $t4 = personalSpaceStart
+    bge			$s0, $t5, mcs_mushroom_end    	        # if $s0 >= $t5 then mcs_mushroom_end
     
     # Check if there is a mushroom infront of the centipede
     add			$t0, $s0, $s1		                # $t0 = $s0 + $s1, next location
