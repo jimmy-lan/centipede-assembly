@@ -76,6 +76,11 @@
     personalSpaceEnd: .word 420          # End position of bug blaster's personal space
     personalSpaceLastVerticalMovement: .word 1   # 1: down, -1: up. Should not be modified, used to calculate personal space centipede movement
 
+    # Texts On Screen
+    gameOverTextLocations: .word 128, 129, 130, 131, 149, 170, 191, 212, 213, 214, 215, 233, 254, 275, 296, 297, 298, 299, 134, 138, 155, 156, 159, 176, 177, 180, 197, 198, 199, 201, 218, 220, 222, 239, 241, 242, 243, 260, 263, 264, 281, 284, 285, 302, 306, 141, 142, 143, 162, 164, 165, 183, 186, 204, 208, 225, 229, 246, 250, 267, 270, 288, 290, 291, 309, 310, 311
+    gameOverTextLength: .word 67
+
+    # Strings for logging
     newline: .asciiz "\n"
     sampleString: .asciiz "Sample String\n"
 
