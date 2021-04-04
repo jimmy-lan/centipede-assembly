@@ -1208,7 +1208,20 @@ clear_screen_drawings:
     sw			$s3, 4($sp)
     sw			$ra, 0($sp)
 
+    li			$s0, 0				    # $s0 = 0, loop counter
+
+    # Calculate total number of positions in object grid
+    lw			$t0, screenPixelUnits	# $t0 = screenPixelUnits
+    mult	    $t0, $t0			    # $t0 * $t0 = Hi and Lo registers
+    mflo	    $s1					    # copy Lo to $s1
     
+    clear_screen_loop:
+        move 		$a0, $s0			                # $a0 = $s0
+        jal			fill_background_at_location			# jump to fill_background_at_location and save position to $ra
+
+        # Increment loop counter
+        addi		$s0, $s0, 1			                # $s0 = $s0 + 1
+        blt			$s0, $s1, clear_screen_loop	        # if $s0 < $s1 then clear_screen_loop
 
     lw			$s0, 16($sp)
     lw			$s1, 12($sp)
