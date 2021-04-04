@@ -199,7 +199,17 @@ game_over:
     sw			$s3, 4($sp)
     sw			$ra, 0($sp)
 
+    # Clear the screen
+    jal			clear_screen_drawings				# jump to clear_screen_drawings and save position to $ra
     
+    # Fill game over text
+    la			$a0, gameOverTextLocations			# 
+    lw			$a1, gameOverTextLength			    # 
+    lw			$a2, gameOverTextColor			    # 
+    jal			fill_color_squares				    # jump to fill_color_squares and save position to $ra
+    
+    # Terminate program
+    j			program_exit				        # jump to program_exit
 
     lw			$s0, 16($sp)
     lw			$s1, 12($sp)
@@ -1198,7 +1208,7 @@ fill_background_at_location:
 # END FUN fill_background
 
 # FUN clear_screen_drawings
-# - Clear all drawings on the screen
+# - Clear all drawings on the screen.
 # ARGS:
 clear_screen_drawings:
     addi		$sp, $sp, -20			# $sp -= 20
