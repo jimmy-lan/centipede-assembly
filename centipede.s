@@ -127,8 +127,8 @@ game_loop_main:
     move 		$a0, $s0			            # $a0 = $s0
     jal			control_darts				    # jump to control_darts and save position to $ra
 
-    # Game rule logic
-    jal			detect_mushroom_dart_collision	# jump to detect_mushroom_dart_collision and save position to $ra
+    # Game rule
+    jal			enforce_game_rules				# jump to enforce_game_rules and save position to $ra
     
     # Frame control
     jal			sleep				            # jump to sleep and save position to $ra
@@ -137,6 +137,35 @@ game_loop_main:
     
     j			game_loop_main				    # jump to game_loop_main
 
+############################################################################################
+
+# FUN enforce_game_rules
+# - This function should be ran for every cycle of the main game loop.
+# - This function checks the current state of the game and mutate objects based on
+# - the game rules.
+# ARGS:
+# RETURN $v0: 0
+enforce_game_rules:
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    jal			detect_mushroom_dart_collision	# jump to detect_mushroom_dart_collision and save position to $ra
+
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+
+    move 		$v0, $zero			# $v0 = $zero
+    jr			$ra					# jump to $ra
+
+# END FUN enforce_game_rules
 
 ############################################################################################
 
