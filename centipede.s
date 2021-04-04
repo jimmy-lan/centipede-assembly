@@ -414,7 +414,27 @@ detect_centipede_blaster_collision:
     sw			$s3, 4($sp)
     sw			$ra, 0($sp)
 
+    la			$s0, centipedeLocations			# 
+    lw			$s1, centipedeLength			# 
+    li			$s2, 0				            # $s2 = 0
     
+    dcbc_loop:
+        lw			$t0, 0($s0)			                # load current centipede segment location to $t0
+        lw			$t1, blasterLocation		        # load current blaster location to $t1
+        
+        beq			$t0, $t1, dcbc_respond_collision	# if $t0 == $t1 then dcbc_respond_collision
+        j			dcbc_respond_collision_end			# jump to dcbc_respond_collision_end
+        
+        dcbc_respond_collision:
+        # Temporary: game over
+        jal			game_over				            # jump to game_over and save position to $ra
+        
+        dcbc_respond_collision_end:
+
+        # Increment loop counter
+        addi		$s0, $s0, 4			                # advance to next element
+        addi		$s2, $s2, 1			                # $s2 = $s2 + 1
+        blt			$s2, $s1, dcdc_loop	                # if $s2 < $s1 then dcdc_loop
 
     lw			$s0, 16($sp)
     lw			$s1, 12($sp)
