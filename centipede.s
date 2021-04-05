@@ -47,7 +47,7 @@
     dartColor: .word 0x00ffffff
 
     gameOverTextColor: .word 0x00fc037f
-    winTextColor: .word 0x0010e858
+    gameWonTextColor: .word 0x0010e858
     # --- END Colors
 
     # --- Objects
@@ -56,7 +56,7 @@
     centipedeLocationEmpty: .word -1     # Location value to indicate a "dead" centipede segment
     centipedeDirections: .word 1:10      # 1: goes right, -1: goes left
     centipedeLength: .word 10
-    centipedeFramesPerMove: .word 1      # Number of frames per movement of the centipede
+    centipedeFramesPerMove: .word 6      # Number of frames per movement of the centipede
 
     # Mushrooms
     mushrooms: .word 0:399               # Mushrooms will only exist in the first 19 rows (19 * 21)
@@ -79,6 +79,8 @@
     # Texts On Screen
     gameOverTextLocations: .word 128, 129, 130, 131, 149, 170, 191, 212, 213, 214, 215, 233, 254, 275, 296, 297, 298, 299, 134, 138, 155, 156, 159, 176, 177, 180, 197, 198, 199, 201, 218, 220, 222, 239, 241, 242, 243, 260, 263, 264, 281, 284, 285, 302, 306, 141, 142, 143, 162, 164, 165, 183, 186, 204, 208, 225, 229, 246, 250, 267, 270, 288, 290, 291, 309, 310, 311
     gameOverTextLength: .word 67
+    gameWonTextLocations: .word 149, 170, 191, 212, 233, 255, 193, 214, 235, 257, 153, 174, 195, 216, 237, 177, 198, 219, 240, 157, 158, 262, 263, 180, 201, 222, 243, 162, 183, 204, 225, 246, 267, 184, 205, 206, 227, 228, 249, 166, 187, 208, 229, 250, 271, 317, 318, 319, 320, 321, 322, 323, 324, 325, 326, 327, 328, 329, 330, 331, 332, 333, 334
+    gameWonTextLength: .word 63
 
     # Strings for logging
     newline: .asciiz "\n"
@@ -179,6 +181,8 @@ enforce_game_rules:
 
     jal			detect_centipede_blaster_collision  # jump to detect_centipede_blaster_collision and save position to $ra
 
+    jal			detect_centipede_clear_off				# jump to detect_centipede_clear_off and save position to $ra
+
     lw			$s0, 16($sp)
     lw			$s1, 12($sp)
     lw			$s2, 8($sp)
@@ -190,6 +194,84 @@ enforce_game_rules:
     jr			$ra					                # jump to $ra
 
 # END FUN enforce_game_rules
+
+# FUN detect_centipede_clear_off
+# - Check if centipede has been cleared by the bug blaster.
+# - Respond to the clear off event if possible.
+# ARGS:
+detect_centipede_clear_off:
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    la			$s0, centipedeLocations			# 
+    lw			$s1, centipedeLength			# 
+    li			$s2, 0				            # $s2 = 0, the loop counter
+
+    dcco_loop:
+        lw			$t0, 0($s0)			        # load current segment location (object grid)
+        
+        # If current segment exists, then the centipede is not cleared off
+        bne			$t0, -1, dcco_end	        # if $t0 != -1 then dcco_end
+
+        # Increment loop counter
+        addi		$s0, $s0, 4			        # advance to next element
+        addi		$s2, $s2, 1			        # $s2 = $s2 + 1
+        blt			$s2, $s1, dcco_loop	        # if $s2 < $s1 then dcco_loop
+
+    # Respond to clear off event
+    jal			game_won				        # jump to game_won and save position to $ra
+
+    dcco_end:
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+
+    move 		$v0, $zero			    # $v0 = $zero
+    jr			$ra					    # jump to $ra
+
+# END FUN detect_centipede_clear_off
+
+# FUN game_won
+# - Invoke when player won the game.
+# ARGS:
+game_won:
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    # Clear the screen
+    jal			clear_screen_drawings				# jump to clear_screen_drawings and save position to $ra
+    
+    # Fill game over text
+    la			$a0, gameWonTextLocations			# 
+    lw			$a1, gameWonTextLength			    # 
+    lw			$a2, gameWonTextColor			    # 
+    jal			fill_color_squares				    # jump to fill_color_squares and save position to $ra
+    
+    # Terminate program
+    j			program_exit				        # jump to program_exit
+
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+
+    move 		$v0, $zero			# $v0 = $zero
+    jr			$ra					# jump to $ra
+
+# END FUN game_won
 
 # FUN game_over
 # ARGS:
@@ -609,8 +691,8 @@ control_darts:
 # # Object Movement Logic
 ##############################################
 # FUN move_blaster_by_keystroke
-# - "j": move left
-# - "k": move right
+# - "a": move left
+# - "d": move right
 # - "w": move up
 # - "s": move down
 # ARGS:
@@ -641,52 +723,63 @@ move_blaster_by_keystroke:
 
     # Check type of key being pressed
     lw			$t9, 0xffff0004			    # load key identifier
-    beq			$t9, 0x6A, mbbk_handle_j	# if $t9 == 0x6A then mbbk_handle_j
-    beq			$t9, 0x6B, mbbk_handle_k	# if $t9 == 0x6B then mbbk_handle_k
+    beq			$t9, 0x61, mbbk_handle_a	# if $t9 == 0x6A then mbbk_handle_a
+    beq			$t9, 0x64, mbbk_handle_d	# if $t9 == 0x6B then mbbk_handle_d
     beq			$t9, 0x77, mbbk_handle_w	# if $t9 == 0x57 then mbbk_handle_w
     beq			$t9, 0x73, mbbk_handle_s	# if $t9 == 0x53 then mbbk_handle_s
 
     # Produce default return
     mbbk_default_return:
     move 		$v0, $s0			        # $v0 = current blaster location, default return
-    j			mbbk_key_handle_end			# jump to mbbk_key_handle_end
+    j			mbbk_end			        # jump to mbbk_end
 
     # --- Handle movement keys
-    mbbk_handle_j:
+    mbbk_handle_a:
         # Prevent bug blaster from exiting the left border
         beq			$s3, $zero, mbbk_default_return	# if $s3 == $zero then mbbk_default_return
         subi		$v0, $s0, 1			            # $v0 = $s0 - 1
-        mbbk_handle_j_end:
+        mbbk_handle_a_end:
         j			mbbk_key_handle_end		        # jump to mbbk_key_handle_end
-    mbbk_handle_k:
+    mbbk_handle_d:
         # Prevent bug blaster from exiting the right border
         subi		$t0, $s1, 1			            # $t0 = $s1 - 1
         beq			$s3, $t0, mbbk_default_return	# if $s3 == $t0 then mbbk_default_return
         addi		$v0, $s0, 1			            # $v0 = $s0 + 1
-        mbbk_handle_k_end:
+        mbbk_handle_d_end:
         j			mbbk_key_handle_end		        # jump to mbbk_key_handle_end
     mbbk_handle_w:
         # Prevent bug blaster from leaving personal space
         lw			$t0, personalSpaceStart			# $t0 = personalSpaceStart
         sub		    $v0, $s0, $s1			        # $v0 = $s0 - $s1
-        bge			$v0, $t0, mbbk_handle_w_end 	# if currently in personal space
+        bge			$v0, $t0, mbbk_key_handle_end 	# if currently in personal space
 
-        mbbk_left_personal_space_w:
-        move 		$v0, $s0			            # revert location
-
-        mbbk_handle_w_end:
-        j			mbbk_key_handle_end		        # jump to mbbk_key_handle_end
+        j			mbbk_default_return				# jump to mbbk_default_return
+        
     mbbk_handle_s:
         lw			$t0, personalSpaceEnd			# $t0 = personalSpaceEnd
         add			$v0, $s0, $s1		            # $v0 = $s0 + $s1
-        bgt			$t0, $v0, mbbk_handle_s_end 	# if currently in personal space
+        bgt			$t0, $v0, mbbk_key_handle_end 	# if currently in personal space
 
-        mbbk_left_personal_space_s:
-        move 		$v0, $s0			            # revert location
-
-        mbbk_handle_s_end:
-        j			mbbk_key_handle_end		        # jump to mbbk_key_handle_end
+        j			mbbk_default_return				# jump to mbbk_default_return
+        
     mbbk_key_handle_end:
+        # Check if blaster is in mushroom area and hits a mushroom
+        lw			$t0, mushroomLength             # $t0 = mushroomLength
+        bge			$v0, $t0, mbbk_hit_mushroom_end	# if $v0 (updated blaster location) >= $t0 then mbbk_hit_mushroom_end
+    
+    mbbk_hit_mushroom:
+        # Bug blaster is in mushroom area
+        li			$t9, 4				            # $t9 = 4
+        mult	    $v0, $t9			            # $v0 * $t9 = Hi and Lo registers
+        mflo	    $t9					            # copy Lo to $t9
+        lw			$t1, mushrooms($t9)			    # check updated location for mushroom
+        beq			$t1, 0, mbbk_hit_mushroom_end	# end if no mushroom is present
+        
+        # If mushroom is present in the new location, then prevent movement
+        j			mbbk_default_return				# jump to mbbk_default_return
+
+    mbbk_hit_mushroom_end:
+    # --- END Check if blaster is in mushroom area and hits a mushroom
     # --- END Handle movement keys
 
     mbbk_end:
@@ -704,6 +797,7 @@ move_blaster_by_keystroke:
 # FUN shoot_dart_by_keystroke
 # - Modify the darts array by adding a dart with appropriate position (in display grid) to it.
 # - If the maximum allowed number of darts is achieved, then do nothing.
+# - "j" - shoot out darts
 # ARGS:
 # $a0: address of the darts array
 # $a1: length of darts array
@@ -733,15 +827,15 @@ shoot_dart_by_keystroke:
     
     # Check type of key being pressed
     lw			$t9, 0xffff0004			            # load key identifier
-    beq			$t9, 0x78, sdbk_handle_x	        # if $t9 == 0x78 then sdbk_handle_x
+    beq			$t9, 0x6A, sbdk_handle_j	        # if $t9 == 0x78 then sbdk_handle_j
     
     j			sdbk_end				            # jump to sdbk_end
 
-    sdbk_handle_x:
+    sbdk_handle_j:
         li 		    $t0, 0			                    # $t0 = 0, the loop counter
-        sdbk_handle_x_loop:
+        sbdk_handle_j_loop:
         lw			$t1, 0($s0)			                # get current element in the darts array
-        bne			$t1, -1, sdbk_handle_x_loop_next	# if not empty, go to the next element
+        bne			$t1, -1, sbdk_handle_j_loop_next	# if not empty, go to the next element
 
         # Position to place dart is one row above the bug blaster
         sub 		$t2, $s2, $s3			            # $t2 = $s2 - $s3
@@ -749,10 +843,10 @@ shoot_dart_by_keystroke:
         j			sdbk_end				            # jump to sdbk_end
         
         # Decrement loop counter and go to the next element
-        sdbk_handle_x_loop_next:
+        sbdk_handle_j_loop_next:
         addi		$t0, $t0, 1			                # decrement loop counter by 1
         addi		$s0, $s0, 4			                # $s0 = $s0 + 4
-        bne			$t0, $s1, sdbk_handle_x_loop	    # if $t0 != $s1 (length of the darts array) then sdbk_handle_x_loop
+        bne			$t0, $s1, sbdk_handle_j_loop	    # if $t0 != $s1 (length of the darts array) then sbdk_handle_j_loop
 
     sdbk_end:
     lw			$s0, 16($sp)
