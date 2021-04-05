@@ -28,6 +28,11 @@
 #
 #####################################################################
 
+#####################################################################
+# Data Section
+# Note: entries with names ending with a number e.g., "1", "2", "3"
+# correspond to default settings for levels "1", "2", and "3".
+#####################################################################
 .data
     # Display
     displayAddress:	 .word 0x10008000
@@ -38,6 +43,10 @@
     framesPerSecond: .word 60       # Number of frames per second (Note: 1000 / framesPerSecond should be an int)
 
     # --- Colors
+    gameOverTextColor: .word 0x00fc037f
+    gameWonTextColor: .word 0x0010e858
+
+    # Constants
     backgroundColor: .word 0x00000000
     centipedeColor: .word 0x00f7a634
     centipedeHeadColor: .word 0x00e35819
@@ -48,23 +57,74 @@
     fleaColor: .word 0x00ee1df5         # Color of a flea that does not leave mushrooms
     fleaLeaveMushroomColor: .word 0x001efa9b    # Color of a flea that leaves mushrooms
 
-    gameOverTextColor: .word 0x00fc037f
-    gameWonTextColor: .word 0x0010e858
+    # Game Level Colors
+    backgroundColor1: .word 0x00000000
+    backgroundColor2: .word 0x00003961
+    backgroundColor3: .word 0x00630228
+
+    centipedeColor1: .word 0x00f7a634
+    centipedeHeadColor1: .word 0x00e35819
+    centipedeColor2: .word 0x004ecc00
+    centipedeHeadColor2: .word 0x0006910d
+    centipedeColor3: .word 0x00af40db
+    centipedeHeadColor3: .word 0x008427d6
+
+    mushroomFullLivesColor1: .word 0x004394f0
+    mushroomColor1: .word 0x0076c0d6
+    mushroomFullLivesColor2: .word 0x004394f0
+    mushroomColor2: .word 0x009f41ab
+    mushroomFullLivesColor3: .word 0x004151cc
+    mushroomColor3: .word 0x006596e0
+
+    fleaColor1: .word 0x00ee1df5
+    fleaLeaveMushroomColor1: .word 0x001efa9b
+    fleaColor2: .word 0x00f7eb00
+    fleaLeaveMushroomColor2: .word 0x00d65900
+    fleaColor3: .word 0x002ad627
+    fleaLeaveMushroomColor3: .word 0x00e09200
     # --- END Colors
 
     # --- Objects
     # Centipede
-    centipedeLocations: .word 0, 1, 2, 3, 4, 5, 6, 7, 8, 9
+    centipedeLocations: .word 0:25       # Placeholder
     centipedeLocationEmpty: .word -1     # Location value to indicate a "dead" centipede segment
-    centipedeDirections: .word 1:10      # 1: goes right, -1: goes left
-    centipedeLength: .word 10
-    centipedeFramesPerMove: .word 6      # Number of frames per movement of the centipede
+    centipedeDirections: .word 1:25      # 1: goes right, -1: goes left, placeholder
+    centipedeLength: .word -1            # Placeholder
+    centipedeFramesPerMove: .word 0      # Number of frames per movement of the centipede, placeholder
+
+    # --- Centipede levels
+    centipedeLocations1: .word 0, 1, 2, 3, 4, 5, 6, 7, 8, 9
+    centipedeDirections1: .word 1:10
+    centipedeLength1: .word 10
+    centipedeFramesPerMove1: .word 6
+
+    centipedeLocations2: .word 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14
+    centipedeDirections2: .word 1:15
+    centipedeLength2: .word 15
+    centipedeFramesPerMove2: .word 4
+
+    centipedeLocations3: .word 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62
+    centipedeDirections3: .word 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
+    centipedeLength3: .word 25
+    centipedeFramesPerMove3: .word 3
+    # --- END Centipede levels
 
     # Mushrooms
     mushrooms: .word 0:399               # Mushrooms will only exist in the first 19 rows (19 * 21)
     mushroomLength: .word 399
     mushroomLives: .word 4               # Number of times that a mushroom needs to be blasted before going away
     mushroomInitQuantity: .word 15       # Initial number of mushrooms to be generated on the screen (maximum)
+
+    # --- Mushroom levels
+    mushroomLength1: 378
+    mushroomInitQuantity1: .word 15
+
+    mushroomLength2: 399
+    mushroomInitQuantity2: .word 5       # Perserve remaining mushrooms, additional mushrooms to add when entering level
+
+    mushroomLength3: 399
+    mushroomInitQuantity3: .word 10      # Perserve remaining mushrooms, additional mushrooms to add when entering level
+    # --- END Mushroom levels
 
     # Bug blaster + darts
     blasterLocation: .word 410           # Initial location of the bug blaster in object grid
@@ -73,10 +133,10 @@
     dartFramesPerMove: .word 1           # Number of frames per movement of the darts
 
     # Flea
-    fleas: .word -1:5
-    fleaLength: .word 5
+    fleas: .word -1:10
+    fleaLength: .word 10
     fleaCurrentLives: .word 0:5                 # Current health of the fleas
-    fleaMaxLives: .word 2                          # Maximum lives per flea
+    fleaMaxLives: .word 2                       # Maximum lives per flea
     fleaFramesPerMove: .word 2
     fleaFramesPerGen: .word 30                  # Number of frames to generate flea
     fleaGenProb: .word 15                       # Probability to generate flea per generation cycle
@@ -85,12 +145,41 @@
     fleaMushroomProbLower: .word 30             # Probability of fleas leaving mushroom on the lower half of screen
     fleaMushroomProbSplitLocation: .word 210    # Location at which the flea changes probability of generating mushroom
     fleaLeaveMushroomThreshold: .word 35        # Leave mushroom if number of mushrooms in area is less than this number
+
+    # --- Flea levels
+    fleaLength1: .word 5
+    fleaLength2: .word 10
+    fleaLength3: .word 10
+
+    fleaMaxLives1: .word 1
+    fleaMaxLives2: .word 2
+    fleaMaxLives3: .word 2
+
+    fleaMaxAmountPerGen1: .word 3
+    fleaMaxAmountPerGen2: .word 5
+    fleaMaxAmountPerGen3: .word 10
+
+    fleaMushroomProbUpper1: .word 4
+    fleaMushroomProbUpper2: .word 5
+    fleaMushroomProbUpper3: .word 8
+
+    fleaMushroomProbLower1: .word 25
+    fleaMushroomProbLower2: .word 35
+    fleaMushroomProbLower3: .word 50
+
+    fleaLeaveMushroomThreshold1: .word 35
+    fleaLeaveMushroomThreshold2: .word 40
+    fleaLeaveMushroomThreshold3: .word 50
+    # --- END Flea levels
     # --- END Objects
 
     # Personal Space for Bug Blaster
     personalSpaceStart: .word 357        # Start position of bug blaster's personal space
     personalSpaceEnd: .word 420          # End position of bug blaster's personal space
     personalSpaceLastVerticalMovement: .word 1   # 1: down, -1: up. Should not be modified, used to calculate personal space centipede movement
+
+    # Current level
+    currentLevel: .word 1
 
     # Texts On Screen
     gameOverTextLocations: .word 128, 129, 130, 131, 149, 170, 191, 212, 213, 214, 215, 233, 254, 275, 296, 297, 298, 299, 134, 138, 155, 156, 159, 176, 177, 180, 197, 198, 199, 201, 218, 220, 222, 239, 241, 242, 243, 260, 263, 264, 281, 284, 285, 302, 306, 141, 142, 143, 162, 164, 165, 183, 186, 204, 208, 225, 229, 246, 250, 267, 270, 288, 290, 291, 309, 310, 311
@@ -117,6 +206,9 @@
 main:
     # Load values
     lw			$s7, displayAddress			        #
+
+    # Initialize canvas
+    jal			clear_screen_drawings				# jump to clear_screen_drawings and save position to $ra
     
     # Initialize mushrooms
     lw			$a0, mushroomInitQuantity			# Number of mushrooms to generate
@@ -2015,7 +2107,7 @@ draw_blaster:
     jr			$ra					    # jump to $ra
 
 # END FUN draw_blaster
-# FUN fill_background
+# FUN fill_background_at_location
 # ARGS:
 # $a0: location to fill background (object grid)
 fill_background_at_location:
@@ -2031,7 +2123,7 @@ fill_background_at_location:
     move 		$v0, $zero			        # $v0 = $zero
     jr			$ra					        # jump to $ra
 
-# END FUN fill_background
+# END FUN fill_background_at_location
 
 # FUN clear_screen_drawings
 # - Clear all drawings on the screen.
@@ -2505,6 +2597,32 @@ count_mushrooms:
     jr			$ra					    # jump to $ra
 
 # END FUN count_mushrooms
+
+# FUN remove_mushrooms
+# ARGS:
+# $a0: address of location array indicating where to remove mushrooms (object grid)
+# $a1: length of location array
+remove_mushrooms:
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    
+
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+
+    move 		$v0, $zero			# $v0 = $zero
+    jr			$ra					# jump to $ra
+
+# END FUN remove_mushrooms
 
 # FUN object_to_display_grid_location
 # ARGS:
