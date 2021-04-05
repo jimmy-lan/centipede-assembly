@@ -14,20 +14,39 @@
 #
 # Which milestone is reached in this submission?
 # (See the project handout for descriptions of the milestones)
-# - Milestone 1/2/3/4/5 (choose the one the applies)
+# - Milestone 5
 #
 # Which approved additional features have been implemented?
 # (See the project handout for the list of additional features)
-# 1. (fill in the feature, if any)
-# 2. (fill in the feature, if any)
-# 3. (fill in the feature, if any)
-# ... (add more if necessary)
+# 1. Milestone 4a
+# 2. Milestone 4d
+# 3. Milestone 4e
+# 4. Milestone 5b: Multiple fleas, two types of fleas, varying probability
+# of generating mushrooms (will explain in-lab)
+# 5. Milestone 5d
+# 
+# Not sure if counted as "approved"
+# 6. Bug blaster "personal space": bug blaster can move up and down.
+#    Please see additional information for keyboard controls.
+# 7. Mushroom tear-off animation
+# 8. Color changes between levels
+# 9. Fancy ending screens
 #
 # Any additional information that the TA needs to know:
 # - (write here, if any)
+# 1. Please note the different display settings in my setup.
+# 2. Use "w", "s", "a", "d" to go up, down, left, right, respectively.
+#    Use the key "j" to shoot darts. To prevent mis-press of keys,
+#    the restart ("r") and quit ("q") keys are only activated when the 
+#    game is over (i.e., will only work on game over screen.)
 #
 #####################################################################
 
+#####################################################################
+# Data Section
+# Note: entries with names ending with a number e.g., "1", "2", "3"
+# correspond to default settings for levels "1", "2", and "3".
+#####################################################################
 .data
     # Display
     displayAddress:	 .word 0x10008000
@@ -38,6 +57,10 @@
     framesPerSecond: .word 60       # Number of frames per second (Note: 1000 / framesPerSecond should be an int)
 
     # --- Colors
+    gameOverTextColor: .word 0x00fc037f
+    gameWonTextColor: .word 0x0010e858
+
+    # Constants
     backgroundColor: .word 0x00000000
     centipedeColor: .word 0x00f7a634
     centipedeHeadColor: .word 0x00e35819
@@ -48,23 +71,74 @@
     fleaColor: .word 0x00ee1df5         # Color of a flea that does not leave mushrooms
     fleaLeaveMushroomColor: .word 0x001efa9b    # Color of a flea that leaves mushrooms
 
-    gameOverTextColor: .word 0x00fc037f
-    gameWonTextColor: .word 0x0010e858
+    # Game Level Colors
+    backgroundColor1: .word 0x00000000
+    backgroundColor2: .word 0x00003961
+    backgroundColor3: .word 0x00630228
+
+    centipedeColor1: .word 0x00f7a634
+    centipedeHeadColor1: .word 0x00e35819
+    centipedeColor2: .word 0x004ecc00
+    centipedeHeadColor2: .word 0x0006910d
+    centipedeColor3: .word 0x00af40db
+    centipedeHeadColor3: .word 0x008427d6
+
+    mushroomFullLivesColor1: .word 0x004394f0
+    mushroomColor1: .word 0x0076c0d6
+    mushroomFullLivesColor2: .word 0x009f41ab
+    mushroomColor2: .word 0x00d070e6
+    mushroomFullLivesColor3: .word 0x004151cc
+    mushroomColor3: .word 0x006596e0
+
+    fleaColor1: .word 0x00ee1df5
+    fleaLeaveMushroomColor1: .word 0x001efa9b
+    fleaColor2: .word 0x00f7eb00
+    fleaLeaveMushroomColor2: .word 0x00d65900
+    fleaColor3: .word 0x002ad627
+    fleaLeaveMushroomColor3: .word 0x00e09200
     # --- END Colors
 
     # --- Objects
     # Centipede
-    centipedeLocations: .word 0, 1, 2, 3, 4, 5, 6, 7, 8, 9
+    centipedeLocations: .word 0:25       # Placeholder
     centipedeLocationEmpty: .word -1     # Location value to indicate a "dead" centipede segment
-    centipedeDirections: .word 1:10      # 1: goes right, -1: goes left
-    centipedeLength: .word 10
-    centipedeFramesPerMove: .word 6      # Number of frames per movement of the centipede
+    centipedeDirections: .word 0:25      # 1: goes right, -1: goes left, placeholder
+    centipedeLength: .word -1            # Placeholder
+    centipedeFramesPerMove: .word 0      # Number of frames per movement of the centipede, placeholder
+
+    # --- Centipede levels
+    centipedeLocations1: .word 0, 1, 2, 3, 4, 5, 6, 7, 8, 9
+    centipedeDirections1: .word 1:10
+    centipedeLength1: .word 10
+    centipedeFramesPerMove1: .word 6
+
+    centipedeLocations2: .word 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14
+    centipedeDirections2: .word 1:15
+    centipedeLength2: .word 15
+    centipedeFramesPerMove2: .word 4
+
+    centipedeLocations3: .word 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62
+    centipedeDirections3: .word 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
+    centipedeLength3: .word 25
+    centipedeFramesPerMove3: .word 3
+    # --- END Centipede levels
 
     # Mushrooms
     mushrooms: .word 0:399               # Mushrooms will only exist in the first 19 rows (19 * 21)
     mushroomLength: .word 399
     mushroomLives: .word 4               # Number of times that a mushroom needs to be blasted before going away
     mushroomInitQuantity: .word 15       # Initial number of mushrooms to be generated on the screen (maximum)
+
+    # --- Mushroom levels
+    mushroomLength1: 378
+    mushroomInitQuantity1: .word 15
+
+    mushroomLength2: 399
+    mushroomInitQuantity2: .word 5       # Perserve remaining mushrooms, additional mushrooms to add when entering level
+
+    mushroomLength3: 399
+    mushroomInitQuantity3: .word 10      # Perserve remaining mushrooms, additional mushrooms to add when entering level
+    # --- END Mushroom levels
 
     # Bug blaster + darts
     blasterLocation: .word 410           # Initial location of the bug blaster in object grid
@@ -73,10 +147,10 @@
     dartFramesPerMove: .word 1           # Number of frames per movement of the darts
 
     # Flea
-    fleas: .word -1:5
-    fleaLength: .word 5
-    fleaCurrentLives: .word 0:5                 # Current health of the fleas
-    fleaMaxLives: .word 2                          # Maximum lives per flea
+    fleas: .word -1:10
+    fleaLength: .word 10
+    fleaCurrentLives: .word 0:10                 # Current health of the fleas
+    fleaMaxLives: .word 2                       # Maximum lives per flea
     fleaFramesPerMove: .word 2
     fleaFramesPerGen: .word 30                  # Number of frames to generate flea
     fleaGenProb: .word 15                       # Probability to generate flea per generation cycle
@@ -85,12 +159,45 @@
     fleaMushroomProbLower: .word 30             # Probability of fleas leaving mushroom on the lower half of screen
     fleaMushroomProbSplitLocation: .word 210    # Location at which the flea changes probability of generating mushroom
     fleaLeaveMushroomThreshold: .word 35        # Leave mushroom if number of mushrooms in area is less than this number
+
+    # --- Flea levels
+    fleaLength1: .word 5
+    fleaLength2: .word 10
+    fleaLength3: .word 10
+
+    fleaMaxLives1: .word 1
+    fleaMaxLives2: .word 2
+    fleaMaxLives3: .word 2
+
+    fleaFramesPerMove1: .word 3
+    fleaFramesPerMove2: .word 2
+    fleaFramesPerMove3: .word 1
+
+    fleaMaxAmountPerGen1: .word 3
+    fleaMaxAmountPerGen2: .word 5
+    fleaMaxAmountPerGen3: .word 10
+
+    fleaMushroomProbUpper1: .word 4
+    fleaMushroomProbUpper2: .word 5
+    fleaMushroomProbUpper3: .word 8
+
+    fleaMushroomProbLower1: .word 25
+    fleaMushroomProbLower2: .word 35
+    fleaMushroomProbLower3: .word 50
+
+    fleaLeaveMushroomThreshold1: .word 35
+    fleaLeaveMushroomThreshold2: .word 40
+    fleaLeaveMushroomThreshold3: .word 50
+    # --- END Flea levels
     # --- END Objects
 
     # Personal Space for Bug Blaster
     personalSpaceStart: .word 357        # Start position of bug blaster's personal space
     personalSpaceEnd: .word 420          # End position of bug blaster's personal space
     personalSpaceLastVerticalMovement: .word 1   # 1: down, -1: up. Should not be modified, used to calculate personal space centipede movement
+
+    # Current level
+    currentLevel: .word 1
 
     # Texts On Screen
     gameOverTextLocations: .word 128, 129, 130, 131, 149, 170, 191, 212, 213, 214, 215, 233, 254, 275, 296, 297, 298, 299, 134, 138, 155, 156, 159, 176, 177, 180, 197, 198, 199, 201, 218, 220, 222, 239, 241, 242, 243, 260, 263, 264, 281, 284, 285, 302, 306, 141, 142, 143, 162, 164, 165, 183, 186, 204, 208, 225, 229, 246, 250, 267, 270, 288, 290, 291, 309, 310, 311
@@ -117,12 +224,13 @@
 main:
     # Load values
     lw			$s7, displayAddress			        #
-    
-    # Initialize mushrooms
-    lw			$a0, mushroomInitQuantity			# Number of mushrooms to generate
-    lw			$a1, mushroomLives			        # Number of "lives" per mushroom
-    jal			generate_mushrooms				    # jump to generate_mushrooms and save position to $ra
 
+    # Initialize canvas
+    jal			clear_screen_drawings				# jump to clear_screen_drawings and save position to $ra
+
+    lw			$a0, currentLevel
+    jal			init_current_level				    # jump to init_current_level and save position to $ra
+    
 ##############################################
 # # Game Loop
 ##############################################
@@ -182,6 +290,278 @@ program_exit:
 # # Levels and restarts
 ##############################################
 
+# FUN init_current_level
+# ARGS:
+# - $a0: current level
+# RETURN $v0: 0
+init_current_level:
+    addi		$sp, $sp, -20			        # $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    # Load parameters
+    move 		$s0, $a0			            # $s0 = $a0
+
+    # Currently, we do not support levels higher than 3
+    bgt			$s0, 3, init_current_level_won	# if $s0 > 3 then init_current_level_won
+    
+    beq			$s0, 1, init_level_1	        # if $s0 == 1 then init_level_1
+    beq			$s0, 2, init_level_2	        # if $s0 == 2 then init_level_2
+    beq			$s0, 3, init_level_3	        # if $s0 == 3 then init_level_3
+
+    # Fail silently for invalid user inputs
+    j			init_level_end				    # jump to init_level_end
+
+    init_level_1:
+    # --- Load colors
+    lw			$t0, backgroundColor1
+    sw			$t0, backgroundColor
+    lw			$t0, centipedeColor1
+    sw			$t0, centipedeColor
+    lw			$t0, mushroomFullLivesColor1
+    sw			$t0, mushroomFullLivesColor
+    lw			$t0, mushroomColor1
+    sw			$t0, mushroomColor
+    lw			$t0, fleaColor1
+    sw			$t0, fleaColor
+    lw			$t0, fleaLeaveMushroomColor1
+    sw			$t0, fleaLeaveMushroomColor
+    # --- END Load colors
+
+    # --- Load objects
+    # Centipede
+    la			$a0, centipedeLocations1
+    la			$a1, centipedeLocations
+    lw			$a2, centipedeLength1
+    jal			copy_array				# jump to copy_array and save position to $ra
+    
+    la			$a0, centipedeDirections1
+    la			$a1, centipedeDirections
+    lw			$a2, centipedeLength1
+    jal			copy_array				# jump to copy_array and save position to $ra
+    
+    lw			$t0, centipedeLength1
+    sw			$t0, centipedeLength
+    lw			$t0, centipedeFramesPerMove1
+    sw			$t0, centipedeFramesPerMove
+
+    # Mushrooms
+    lw			$t0, mushroomLength1
+    sw			$t0, mushroomLength
+    lw			$t0, mushroomInitQuantity1
+    sw			$t0, mushroomInitQuantity
+
+    # Fleas
+    lw			$t0, fleaLength1
+    sw			$t0, fleaLength
+    lw			$t0, fleaMaxLives1
+    sw			$t0, fleaMaxLives
+    lw			$t0, fleaFramesPerMove1
+    sw			$t0, fleaFramesPerMove
+    lw			$t0, fleaMaxAmountPerGen1
+    sw			$t0, fleaMaxAmountPerGen
+    lw			$t0, fleaMushroomProbUpper1
+    sw			$t0, fleaMushroomProbUpper
+    lw			$t0, fleaMushroomProbLower1
+    sw			$t0, fleaMushroomProbLower
+    lw			$t0, fleaLeaveMushroomThreshold1
+    sw			$t0, fleaLeaveMushroomThreshold
+    # --- END Load objects
+
+    j			init_level_end				    # jump to init_level_end
+    
+    init_level_2:
+    # --- Load colors
+    lw			$t0, backgroundColor2
+    sw			$t0, backgroundColor
+    lw			$t0, centipedeColor2
+    sw			$t0, centipedeColor
+    lw			$t0, mushroomFullLivesColor2
+    sw			$t0, mushroomFullLivesColor
+    lw			$t0, mushroomColor2
+    sw			$t0, mushroomColor
+    lw			$t0, fleaColor2
+    sw			$t0, fleaColor
+    lw			$t0, fleaLeaveMushroomColor2
+    sw			$t0, fleaLeaveMushroomColor
+    # --- END Load colors
+
+    # --- Load objects
+    # Centipede
+    la			$a0, centipedeLocations2
+    la			$a1, centipedeLocations
+    lw			$a2, centipedeLength2
+    jal			copy_array				# jump to copy_array and save position to $ra
+    
+    la			$a0, centipedeDirections2
+    la			$a1, centipedeDirections
+    lw			$a2, centipedeLength2
+    jal			copy_array				# jump to copy_array and save position to $ra
+    
+    lw			$t0, centipedeLength2
+    sw			$t0, centipedeLength
+    lw			$t0, centipedeFramesPerMove2
+    sw			$t0, centipedeFramesPerMove
+
+    # Mushrooms
+    lw			$t0, mushroomLength2
+    sw			$t0, mushroomLength
+    lw			$t0, mushroomInitQuantity2
+    sw			$t0, mushroomInitQuantity
+
+    # Fleas
+    lw			$t0, fleaLength2
+    sw			$t0, fleaLength
+    lw			$t0, fleaMaxLives2
+    sw			$t0, fleaMaxLives
+    lw			$t0, fleaFramesPerMove1
+    sw			$t0, fleaFramesPerMove
+    lw			$t0, fleaMaxAmountPerGen2
+    sw			$t0, fleaMaxAmountPerGen
+    lw			$t0, fleaMushroomProbUpper2
+    sw			$t0, fleaMushroomProbUpper
+    lw			$t0, fleaMushroomProbLower2
+    sw			$t0, fleaMushroomProbLower
+    lw			$t0, fleaLeaveMushroomThreshold2
+    sw			$t0, fleaLeaveMushroomThreshold
+    # --- END Load objects
+    
+    j			init_level_end				    # jump to init_level_end
+
+    init_level_3:
+    # --- Load colors
+    lw			$t0, backgroundColor3
+    sw			$t0, backgroundColor
+    lw			$t0, centipedeColor3
+    sw			$t0, centipedeColor
+    lw			$t0, mushroomFullLivesColor3
+    sw			$t0, mushroomFullLivesColor
+    lw			$t0, mushroomColor3
+    sw			$t0, mushroomColor
+    lw			$t0, fleaColor3
+    sw			$t0, fleaColor
+    lw			$t0, fleaLeaveMushroomColor3
+    sw			$t0, fleaLeaveMushroomColor
+    # --- END Load colors
+
+    # --- Load objects
+    # Centipede
+    la			$a0, centipedeLocations3
+    la			$a1, centipedeLocations
+    lw			$a2, centipedeLength3
+    jal			copy_array				# jump to copy_array and save position to $ra
+    
+    la			$a0, centipedeDirections3
+    la			$a1, centipedeDirections
+    lw			$a2, centipedeLength3
+    jal			copy_array				# jump to copy_array and save position to $ra
+    
+    lw			$t0, centipedeLength3
+    sw			$t0, centipedeLength
+    lw			$t0, centipedeFramesPerMove3
+    sw			$t0, centipedeFramesPerMove
+
+    # Mushrooms
+    lw			$t0, mushroomLength3
+    sw			$t0, mushroomLength
+    lw			$t0, mushroomInitQuantity3
+    sw			$t0, mushroomInitQuantity
+
+    # Fleas
+    lw			$t0, fleaLength3
+    sw			$t0, fleaLength
+    lw			$t0, fleaMaxLives3
+    sw			$t0, fleaMaxLives
+    lw			$t0, fleaFramesPerMove1
+    sw			$t0, fleaFramesPerMove
+    lw			$t0, fleaMaxAmountPerGen3
+    sw			$t0, fleaMaxAmountPerGen
+    lw			$t0, fleaMushroomProbUpper3
+    sw			$t0, fleaMushroomProbUpper
+    lw			$t0, fleaMushroomProbLower3
+    sw			$t0, fleaMushroomProbLower
+    lw			$t0, fleaLeaveMushroomThreshold3
+    sw			$t0, fleaLeaveMushroomThreshold
+    # --- END Load objects
+
+    j			init_level_end				    # jump to init_level_end
+
+    init_level_end:
+    # Reset the darts array
+    la			$a0, darts			            # 
+    lw			$a1, dartLength		            # 
+    li			$a2, -1				            # $a2 = -1
+    jal			reset_object_array				# jump to reset_object_array and save position to $ra
+
+    # Reset the fleas array
+    la			$a0, fleas			            # 
+    lw			$a1, fleaLength		            # 
+    li			$a2, -1				            # $a2 = -1
+    jal			reset_object_array				# jump to reset_object_array and save position to $ra
+    
+    # Initialize mushrooms
+    lw			$a0, mushroomInitQuantity		# Number of mushrooms to generate
+    lw			$a1, mushroomLives			    # Number of "lives" per mushroom
+    jal			generate_mushrooms				# jump to generate_mushrooms and save position to $ra
+
+    # Clear mushrooms in initial centipede locations
+    la			$a0, centipedeLocations			# 
+    lw			$a1, centipedeLength			# 
+    jal			remove_mushrooms				# jump to remove_mushrooms and save position to $ra
+
+    j			init_current_level_end			# jump to init_current_level_end
+    
+    init_current_level_won:
+    jal			game_won				        # jump to game_won and save position to $ra
+    
+    init_current_level_end:
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			        # $sp += 20
+
+    move 		$v0, $zero			            # $v0 = $zero
+    jr			$ra					            # jump to $ra
+
+# END FUN init_current_level
+
+# FUN advance_level
+# - Advance to the next level.
+# ARGS:
+advance_level:
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    lw			$t0, currentLevel			            # $t0 = currentLevel
+    addi		$t0, $t0, 1			                    # $t0 = $t0 + 1
+    sw			$t0, currentLevel			            # save new level
+    
+    move 		$a0, $t0			                    # $a0 = $t0
+    jal			init_current_level				        # jump to init_current_level and save position to $ra
+
+    jal			clear_screen_drawings				    # jump to clear_screen_drawings and save position to $ra
+
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+
+    move 		$v0, $zero			# $v0 = $zero
+    jr			$ra					# jump to $ra
+
+# END FUN advance_level
+
 # FUN await_restart
 # - After game is over or the player beats the game, this
 # - function should be invoked to listen for restart key press.
@@ -196,25 +576,44 @@ await_restart:
     sw			$s3, 4($sp)
     sw			$ra, 0($sp)
 
+    # Remove all mushrooms
+    la			$a0, mushrooms				                # $a0 = address of mushrooms
+    lw			$a1, mushroomLength			                # $a1 = mushroomLength
+    li			$a2, 0				                        # $a2 = 0
+    jal			reset_object_array				            # jump to reset_object_array and save position to $ra
+
     await_restart_loop:
         # Load keypress indicator
         lw          $s6, 0xffff0000                         # load key-press indicator
 
-        beq			$s6, 0x71, await_restart_handle_q	    # if $s6 == 0x71 then await_restart_handle_q
-        beq			$s6, 0x72, await_restart_handle_r	# if $s6 == 0x72 then await_restart_handle_r
+        bne			$s6, 1, await_restart_loop_continue	    # if $s6 != 1 then await_restart_loop_continue
+
+        lw			$t0, 0xffff0004			                # load key being pressed
+        beq			$t0, 0x71, await_restart_handle_q	    # if $s6 == 0x71 then await_restart_handle_q
+        beq			$t0, 0x72, await_restart_handle_r	# if $s6 == 0x72 then await_restart_handle_r
         
         j			await_restart_handle_end		        # jump to await_restart_handle_end
         
         await_restart_handle_r:
-        # TODO load level
+        li			$t0, 1				                    # $t0 = 1
+        sw			$t0, currentLevel			            # 
+        move		$a0, $t0			                    # $a0 = $t0
+        jal			init_current_level				        # jump to init_current_level and save position to $ra
+
+        jal			clear_screen_drawings				    # jump to clear_screen_drawings and save position to $ra
+        
+        j			await_restart_end       				# jump to await_restart_handle_end
 
         await_restart_handle_q:
-        j			program_exit				# jump to program_exit
+        j			program_exit				            # jump to program_exit
         
         await_restart_handle_end:
 
+        await_restart_loop_continue:
+        jal			sleep				                    # jump to sleep and save position to $ra
         j			await_restart_loop				        # jump to await_restart_loop
-        
+    
+    await_restart_end:
     lw			$s0, 16($sp)
     lw			$s1, 12($sp)
     lw			$s2, 8($sp)
@@ -295,8 +694,8 @@ detect_centipede_clear_off:
         blt			$s2, $s1, dcco_loop	        # if $s2 < $s1 then dcco_loop
 
     # Respond to clear off event
-    jal			game_won				        # jump to game_won and save position to $ra
-
+    jal			advance_level	        # jump to advance_level and save position to $ra
+    
     dcco_end:
     lw			$s0, 16($sp)
     lw			$s1, 12($sp)
@@ -330,8 +729,8 @@ game_won:
     lw			$a2, gameWonTextColor			    # 
     jal			fill_color_squares				    # jump to fill_color_squares and save position to $ra
     
-    # Terminate program
-    j			program_exit				        # jump to program_exit
+    # Enter await restart procedure
+    jal			await_restart				        # jump to await_restart and save position to $ra
 
     lw			$s0, 16($sp)
     lw			$s1, 12($sp)
@@ -364,8 +763,8 @@ game_over:
     lw			$a2, gameOverTextColor			    # 
     jal			fill_color_squares				    # jump to fill_color_squares and save position to $ra
     
-    # Terminate program
-    j			program_exit				        # jump to program_exit
+    # Enter await restart procedure
+    jal			await_restart				        # jump to await_restart and save position to $ra
 
     lw			$s0, 16($sp)
     lw			$s1, 12($sp)
@@ -669,6 +1068,7 @@ detect_centipede_blaster_collision:
         dcbc_respond_collision:
         # Temporary: game over
         jal			game_over				            # jump to game_over and save position to $ra
+        j			dcbc_end				# jump to dcbc_end
         
         dcbc_respond_collision_end:
 
@@ -677,6 +1077,7 @@ detect_centipede_blaster_collision:
         addi		$s2, $s2, 1			                # $s2 = $s2 + 1
         blt			$s2, $s1, dcbc_loop	                # if $s2 < $s1 then dcbc_loop
 
+    dcbc_end:
     lw			$s0, 16($sp)
     lw			$s1, 12($sp)
     lw			$s2, 8($sp)
@@ -1435,8 +1836,8 @@ generate_mushrooms:
         move 		$t0, $a0			                # $t0 = random number generated
 
         # If the generated mushroom is in the first row, then skip adding this mushroom
-        lw			$t1, screenPixelUnits			    # 
-        blt			$t0, $t1, gml_skip	                # if $t0 < $t1 then gml_skip
+        # lw			$t1, screenPixelUnits			    # 
+        # blt			$t0, $t1, gml_skip	                # if $t0 < $t1 then gml_skip
 
         # Multiply $t0 by 4 to get the location in mushroom array
         addi		$t1, $zero, 4			            # $t1 = $zero + 4
@@ -1755,6 +2156,101 @@ move_centipede_segment:
 
 # END FUN move_centipede_segment
 
+# FUN count_mushrooms
+# ARGS:
+# $a0: address of the mushrooms array
+# $a1: location to start counting (inclusive)
+# $a2: location to end counting (exclusive)
+# RETURN $v0: number of mushrooms present in the interval
+count_mushrooms:
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    # Load parameters
+    move 		$s0, $a0			# $s0 = address of the mushrooms array
+    move 		$s1, $a1			# $s1 = location to start counting (inclusive)
+    move 		$s2, $a2			# $s2 = location to end counting (exclusive)
+
+    # Advance to the start element
+    li			$t0, 4				# $t0 = 4
+    mult	    $s1, $t0			# $s1 * $t0 = Hi and Lo registers
+    mflo	    $t1					# copy Lo to $t1
+    add 		$s0, $s0, $t1		# $s0 = $s0 + $t1
+
+    # Mushroom counter
+    li			$s3, 0				# $s3 = 0
+
+    count_mushrooms_loop:
+        lw			$t0, 0($s0)			                    # load current mushroom
+        beq			$t0, 0, count_mushrooms_loop_continue	# if $t0 == 0 then count_mushrooms_loop_continue
+        
+        addi		$s3, $s3, 1			                    # $s3 = $s3 + 1
+
+        # Increment loop counter
+        count_mushrooms_loop_continue:
+        addi		$s0, $s0, 4			                    # $s0 = $s0 + 4
+        addi		$s1, $s1, 1			                    # $s1 = $s1 + 1
+        blt			$s1, $s2, count_mushrooms_loop	        # if $s1 < $s2 then count_mushrooms_loop
+
+    move 		$v0, $s3			    # $v0 = $s3
+
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+
+    jr			$ra					    # jump to $ra
+
+# END FUN count_mushrooms
+
+# FUN remove_mushrooms
+# ARGS:
+# $a0: address of location array indicating where to remove mushrooms (object grid)
+# $a1: length of location array
+remove_mushrooms:
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    move 		$s0, $a0			# $s0 = $a0
+    move 		$s1, $a1			# $s1 = $a1
+
+    li			$s3, 0				# $s3 = 0
+    remove_mushrooms_loop:
+        lw			$t0, 0($s0)			# 
+        li			$t1, 4				# $t1 = 4
+        mult	    $t0, $t1			# $t0 * $t1 = Hi and Lo registers
+        mflo	    $t2					# copy Lo to $t2
+        li			$t1, 0				# $t1 = 0
+        sw			$t1, mushrooms($t2)	# 
+
+        # Increment loop counters
+        addi		$s0, $s0, 4			# $s0 = $s0 + 4
+        addi		$s3, $s3, 1			# $s3 = $s3 + 1
+        blt			$s3, $s1, remove_mushrooms_loop	# if $s3 < $s1 then remove_mushrooms_loop
+
+
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+
+    move 		$v0, $zero			# $v0 = $zero
+    jr			$ra					# jump to $ra
+
+# END FUN remove_mushrooms
+
 ##############################################
 # # Graphics
 ##############################################
@@ -2006,7 +2502,7 @@ draw_blaster:
     jr			$ra					    # jump to $ra
 
 # END FUN draw_blaster
-# FUN fill_background
+# FUN fill_background_at_location
 # ARGS:
 # $a0: location to fill background (object grid)
 fill_background_at_location:
@@ -2022,7 +2518,7 @@ fill_background_at_location:
     move 		$v0, $zero			        # $v0 = $zero
     jr			$ra					        # jump to $ra
 
-# END FUN fill_background
+# END FUN fill_background_at_location
 
 # FUN clear_screen_drawings
 # - Clear all drawings on the screen.
@@ -2444,13 +2940,13 @@ sleep:
 
 # END FUN sleep
 
-# FUN count_mushrooms
+# FUN copy_array
+# - Copy values from array 1 to array 2
 # ARGS:
-# $a0: address of the mushrooms array
-# $a1: location to start counting (inclusive)
-# $a2: location to end counting (exclusive)
-# RETURN $v0: number of mushrooms present in the interval
-count_mushrooms:
+# $a0: address of array 1
+# $a1: address of array 2
+# $a2: length of array 1 and array 2
+copy_array:
     addi		$sp, $sp, -20			# $sp -= 20
     sw			$s0, 16($sp)
     sw			$s1, 12($sp)
@@ -2459,32 +2955,24 @@ count_mushrooms:
     sw			$ra, 0($sp)
 
     # Load parameters
-    move 		$s0, $a0			# $s0 = address of the mushrooms array
-    move 		$s1, $a1			# $s1 = location to start counting (inclusive)
-    move 		$s2, $a2			# $s2 = location to end counting (exclusive)
+    move 		$s0, $a0			# $s0 = $a0
+    move 		$s1, $a1			# $s1 = $a1
+    move 		$s2, $a2			# $s2 = $a2
 
-    # Advance to the start element
-    li			$t0, 4				# $t0 = 4
-    mult	    $s1, $t0			# $s1 * $t0 = Hi and Lo registers
-    mflo	    $t1					# copy Lo to $t1
-    add 		$s0, $s0, $t1		# $s0 = $s0 + $t1
-
-    # Mushroom counter
-    li			$s3, 0				# $s3 = 0
-
-    count_mushrooms_loop:
-        lw			$t0, 0($s0)			                    # load current mushroom
-        beq			$t0, 0, count_mushrooms_loop_continue	# if $t0 == 0 then count_mushrooms_loop_continue
+    # Set up counters
+    li			$t6, 0				# $t6 = 0, the loop counter
+    li			$s3, 0				# $s3 = 0, the array accessor
+    copy_array_loop:
+        add			$t0, $s3, $s0		# $t0 = $s3 + $s0 - accessor for array 1
+        add			$t1, $s3, $s1		# $t1 = $s3 + $s1 - accessor for array 2
         
-        addi		$s3, $s3, 1			                    # $s3 = $s3 + 1
+        lw			$t2, 0($t0)			# load from array 1
+        sw			$t2, 0($t1)			# save to array 2
 
-        # Increment loop counter
-        count_mushrooms_loop_continue:
-        addi		$s0, $s0, 4			                    # $s0 = $s0 + 4
-        addi		$s1, $s1, 1			                    # $s1 = $s1 + 1
-        blt			$s1, $s2, count_mushrooms_loop	        # if $s1 < $s2 then count_mushrooms_loop
-
-    move 		$v0, $s3			    # $v0 = $s3
+        # Increment loop counters
+        addi		$t6, $t6, 1			            # $t6 = $t6 + 1
+        addi		$s3, $s3, 4			            # $s3 = $s3 + 4
+        blt			$t6, $s2, copy_array_loop	    # if $t6 < $s2 then copy_array_loop
 
     lw			$s0, 16($sp)
     lw			$s1, 12($sp)
@@ -2493,9 +2981,51 @@ count_mushrooms:
     lw			$ra, 0($sp)
     addi		$sp, $sp, 20			# $sp += 20
 
-    jr			$ra					    # jump to $ra
+    move 		$v0, $zero			# $v0 = $zero
+    jr			$ra					# jump to $ra
 
-# END FUN count_mushrooms
+# END FUN copy_array
+
+# FUN reset_object_array
+# - Set all elements in the object array to $a2.
+# ARGS:
+# $a0: address of the object array
+# $a1: length of the object array
+# $a2: value to set
+reset_object_array:
+    addi		$sp, $sp, -20			            # $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    # Load parameters
+    move 		$s0, $a0			                # $s0 = address of the flea array
+    move 		$s1, $a1			                # $s1 = length of the flea array
+    move 		$s2, $a2			                # $s2 = value to set
+
+    li			$s3, 0				                # $s3 = 0, the loop counter
+    reset_object_array_loop:
+        move        $t0, $a2				        # $t0 = $a2
+        sw			$t0, 0($s0)			            # 
+
+        # Increment loop counter
+        addi		$s0, $s0, 4			            # $s0 = $s0 + 4
+        addi		$s3, $s3, 1			            # $s3 = $s3 + 1
+        blt			$s3, $s1, reset_object_array_loop	    # if $s3 < $s1 then reset_object_array_loop
+
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			            # $sp += 20
+
+    move 		$v0, $zero			                # $v0 = $zero
+    jr			$ra					                # jump to $ra
+
+# END FUN reset_object_array
 
 # FUN object_to_display_grid_location
 # ARGS:
@@ -2660,8 +3190,8 @@ calc_coordinate:
 
     # Calculate current row and column
     div			$s0, $s1			# $s0 / $s1
-    mflo	    $v0					# $v0 = floor($s0 / $s1) 
-    mfhi	    $v1					# $v1 = $s0 mod $s1 
+    mflo	    $v0					# $v0 = floor($s0 / $s1)
+    mfhi	    $v1					# $v1 = $s0 mod $s1
 
     lw			$s0, 16($sp)
     lw			$s1, 12($sp)
