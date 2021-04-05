@@ -209,12 +209,10 @@ main:
 
     # Initialize canvas
     jal			clear_screen_drawings				# jump to clear_screen_drawings and save position to $ra
-    
-    # Initialize mushrooms
-    lw			$a0, mushroomInitQuantity			# Number of mushrooms to generate
-    lw			$a1, mushroomLives			        # Number of "lives" per mushroom
-    jal			generate_mushrooms				    # jump to generate_mushrooms and save position to $ra
 
+    lw			$a0, currentLevel
+    jal			init_current_level				    # jump to init_current_level and save position to $ra
+    
 ##############################################
 # # Game Loop
 ##############################################
@@ -292,7 +290,83 @@ init_current_level:
     # Currently, we do not support levels higher than 3
     bgt			$s0, 3, init_current_level_won	# if $s0 > 3 then init_current_level_won
     
+    beq			$s0, 1, init_level_1	        # if $s0 == 1 then init_level_1
+    beq			$s0, 2, init_level_2	        # if $s0 == 2 then init_level_2
+    beq			$s0, 3, init_level_3	        # if $s0 == 3 then init_level_3
+
+    # Fail silently for invalid user inputs
+    j			init_level_end				    # jump to init_level_end
+
+    init_level_1:
+    # --- Load colors
+    lw			$t0, backgroundColor1
+    sw			$t0, backgroundColor
+    lw			$t0, centipedeColor1
+    sw			$t0, centipedeColor
+    lw			$t0, mushroomFullLivesColor1
+    sw			$t0, mushroomFullLivesColor
+    lw			$t0, mushroomColor1
+    sw			$t0, mushroomColor
+    lw			$t0, fleaColor1
+    sw			$t0, fleaColor
+    lw			$t0, fleaLeaveMushroomColor1
+    sw			$t0, fleaLeaveMushroomColor
+    # --- END Load colors
+
+    # --- Load objects
+    # Centipede
+    la			$a0, centipedeLocations1
+    la			$a1, centipedeLocations
+    lw			$a2, centipedeLength1
+    jal			copy_array				# jump to copy_array and save position to $ra
     
+    la			$a0, centipedeDirections1
+    la			$a1, centipedeDirections
+    lw			$a2, centipedeLength1
+    jal			copy_array				# jump to copy_array and save position to $ra
+    
+    lw			$t0, centipedeLength1
+    sw			$t0, centipedeLength
+    lw			$t0, centipedeFramesPerMove1
+    sw			$t0, centipedeFramesPerMove
+
+    # Mushrooms
+    lw			$t0, mushroomLength1
+    sw			$t0, mushroomLength
+    lw			$t0, mushroomInitQuantity1
+    sw			$t0, mushroomInitQuantity
+
+    # Fleas
+    lw			$t0, fleaLength1
+    sw			$t0, fleaLength
+    lw			$t0, fleaMaxLives1
+    sw			$t0, fleaMaxLives
+    lw			$t0, fleaMaxAmountPerGen1
+    sw			$t0, fleaMaxAmountPerGen
+    lw			$t0, fleaMushroomProbUpper1
+    sw			$t0, fleaMushroomProbUpper
+    lw			$t0, fleaMushroomProbLower1
+    sw			$t0, fleaMushroomProbLower
+    lw			$t0, fleaLeaveMushroomThreshold1
+    sw			$t0, fleaLeaveMushroomThreshold
+    # --- END Load objects
+
+    j			init_level_end				    # jump to init_level_end
+    
+    init_level_2:
+    
+    j			init_level_end				    # jump to init_level_end
+
+    init_level_3:
+    
+    j			init_level_end				    # jump to init_level_end
+
+    init_level_end:
+
+    # Initialize mushrooms
+    lw			$a0, mushroomInitQuantity			# Number of mushrooms to generate
+    lw			$a1, mushroomLives			        # Number of "lives" per mushroom
+    jal			generate_mushrooms				    # jump to generate_mushrooms and save position to $ra
 
     j			init_current_level_end			# jump to init_current_level_end
     
@@ -2887,8 +2961,8 @@ calc_coordinate:
 
     # Calculate current row and column
     div			$s0, $s1			# $s0 / $s1
-    mflo	    $v0					# $v0 = floor($s0 / $s1) 
-    mfhi	    $v1					# $v1 = $s0 mod $s1 
+    mflo	    $v0					# $v0 = floor($s0 / $s1)
+    mfhi	    $v1					# $v1 = $s0 mod $s1
 
     lw			$s0, 16($sp)
     lw			$s1, 12($sp)
