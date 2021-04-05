@@ -1082,6 +1082,55 @@ generate_flea:
 
 # END FUN generate_flea
 
+# FUN generate_mushroom_with_probability
+# - Add a mushroom at location $a0 with probability $a1.
+# - If a mushroom already exitst at location, the health of the mushroom
+# - will be boosted to maximum.
+# ARGS:
+# $a0: location (object grid)
+# $a1: probability to generate mushroom
+generate_mushroom_with_probability:
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    move 		$s0, $a0			                # $s0 = location (object grid)
+    move 		$s1, $a1			                # $s1 = probability to generate mushroom
+
+    # --- Do not generate if probability is not met
+    # Generate random number from 0 to 99
+    li			$v0, 42				                # use service 42 to generate random numbers
+    li			$a0, 0				                # $a0 = 0
+    li		    $a1, 100				            # $a1 = 100
+    syscall
+    move 		$t0, $a0			                # $t0 = result
+    # If do not meet generation probability, terminate
+    bge			$t0, $s1, end_gmwp	                # if $t0 >= $s1 then end_gmwp
+    # --- END Do not generate if probability is not met
+
+    # Add mushroom
+    lw			$t0, mushroomLives			        # $t0 = mushroomLives
+    li			$t1, 4				                # $t1 = 4
+    mult	    $s0, $t1			                # $s0 * $t1 = Hi and Lo registers
+    mflo	    $t2					                # copy Lo to $t2
+    sw			$t0, mushroom($t2)			        # save full-health mushroom
+
+    end_gmwp:
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+
+    move 		$v0, $zero			# $v0 = $zero
+    jr			$ra					# jump to $ra
+
+# END FUN generate_mushroom_with_probability
+
 # FUN generate_mushrooms
 # Generate and populate the "mushrooms" array based on "mushroomLength"
 # ARGS:
