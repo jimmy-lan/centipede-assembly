@@ -75,8 +75,8 @@
     fleas: .word -1:5
     fleaLength: .word 5
     fleaFramesPerMove: .word 3
-    fleaFramesPerGen: .word 30            # Number of frames to generate flea
-    fleaProb: .word 10                   # Probability to generate flea per generation cycle
+    fleaFramesPerGen: .word 20            # Number of frames to generate flea
+    fleaProb: .word 20                   # Probability to generate flea per generation cycle
     fleaMaxAmountPerGen: .word 3         # Maximum number of fleas to generate simutaneously
     # --- END Objects
 
@@ -718,16 +718,16 @@ control_flea:
     lw			$s3, backgroundColor			    # $s3 = backgroundColor
 
     # --- Generate flea
-    # lw			$t0, fleaFramesPerGen			    # 
-    # div			$a0, $t0			                # $a0 / $t0
-    # mfhi	    $t3					                # $t3 = $a0 mod $t0
-    # bne			$t3, $zero, end_gen_flea       	    # if $t3 != $zero then end_gen_flea
+    lw			$t0, fleaFramesPerGen			    # 
+    div			$a0, $t0			                # $a0 / $t0
+    mfhi	    $t3					                # $t3 = $a0 mod $t0
+    bne			$t3, $zero, end_gen_flea       	    # if $t3 != $zero then end_gen_flea
 
-    # lw			$a0, fleaMaxAmountPerGen			# 
-    # lw			$a1, fleaProb			            # 
-    # jal			generate_flea				        # jump to generate_flea and save position to $ra
+    lw			$a0, fleaMaxAmountPerGen			# 
+    lw			$a1, fleaProb			            # 
+    jal			generate_flea				        # jump to generate_flea and save position to $ra
 
-    # end_gen_flea:
+    end_gen_flea:
     # --- END Generate flea
 
     # --- Move flea
@@ -747,11 +747,6 @@ control_flea:
     move 		$a0, $s0			    # $a0 = $s0
     move 		$a1, $s1			    # $a1 = $s1
     jal			move_multiple_flea	    # jump to move_multiple_flea and save position to $ra
-
-    lw			$t1, fleas($zero)			# 
-    move		$a0, $t1			# $a0 = $t1
-    li			$v0, 1				# syscall print int
-    syscall							# execute
     
     # Draw new flea
     move 		$a0, $s0			    # $a0 = $s0
@@ -1028,7 +1023,7 @@ generate_flea:
     # If do not meet generation probability, terminate
     bge			$t0, $s1, end_generate_flea	# if $t0 >= $s1 then end_generate_flea
     # --- END Do not generate if probability is not met
-    
+
     # --- Determine how many fleas to generate
     # Generate random number from 0 to ($s0 - 1)
     li			$v0, 42				                # use service 42 to generate random numbers
@@ -1037,17 +1032,16 @@ generate_flea:
     syscall
     move 		$t0, $a0			                # $t0 = result
 
-    addi		$s3, $t0, 1			                # $s3 = random number from 1 to $s0
+    addi		$s2, $t0, 1			                # $s2 = random number from 1 to $s0
     # --- END Determine how many fleas to generate
 
-    lw			$s2, fleaLength			            # $s2 = fleaLength
-    lw			$t5, fleas				            # $t5 = fleas
+    la			$s3, fleas				            # $s3 = address of fleas
     li			$t6, 0				                # $t6 = 0, the loop counter
     generate_flea_loop:
-        lw			$t0, 0($t5)			                # current flea element
+        lw			$t0, 0($s3)			                # current flea element
         bne			$t0, -1, generate_flea_skip	        # if $t0 != -1 then generate_flea_skip
         
-        # Generate flea and save to 0($t5)
+        # Generate flea and save to 0($s3)
         # Note: the current implementation might result in more than one flea being generating at the same index. In this case, they will be treated as one single flea by the game, since both fleas will move together.
         lw			$t1, screenPixelUnits			    # 
 
@@ -1055,30 +1049,22 @@ generate_flea:
         li			$v0, 42				                # use service 42 to generate random numbers
         li			$a0, 0				                # $a0 = 0
         move		$a1, $t1				            # $a1 = $s0
-        
-        # Perserve $t5
-        addi		$sp, $sp, -4			# $sp = $sp + -4
-        sw			$t5, 0($sp)			    # 
-        
         syscall
-
-        # Get $t5 back
-        lw			$t5, 0($sp)			# 
-        addi		$sp, $sp, 4			# $sp = $sp + 4
         
         move 		$t0, $a0			                # $t0 = resulting rnd num
         # --- END Generate random number from 0 to (screenPixelUnits - 1)
 
         # Save back location
-        sw			$t0, 0($t5)			                # 
+        sw			$t0, 0($s3)			                # 
         
-        subi		$s3, $s3, 1			                # $s3 = $s3 - 1
-        beq			$s3, 0, end_generate_flea	        # if $s3 == 0 then end_generate_flea
+        subi		$s2, $s2, 1			                # $s3 = $s3 - 1
+        beq			$s2, 0, end_generate_flea	        # if $s3 == 0 then end_generate_flea
 
         generate_flea_skip:
-        addi		$t5, $t5, 4			                # $t5 = $t5 + 4
+        addi		$s3, $s3, 4			                # $t5 = $t5 + 4
+        lw			$t4, fleaLength			            # 
         addi		$t6, $t6, 1			                # $t6 = $t6 + 1
-        blt			$t6, $s2, generate_flea_loop	    # if $t6 < $s2 then generate_flea_loop
+        blt			$t6, $t4, generate_flea_loop	    # if $t6 < $s2 then generate_flea_loop
 
     end_generate_flea:
     lw			$s0, 16($sp)
@@ -2112,7 +2098,7 @@ draw_dart:
 
 # FUN sleep
 sleep:
-    addi		$sp, $sp, -20			# $sp -= 20
+    addi		$sp, $sp, -4			# $sp -= 4
     sw			$ra, 0($sp)
 
     # --- Calculate sleep amount
@@ -2128,7 +2114,7 @@ sleep:
     syscall
 
     lw			$ra, 0($sp)
-    addi		$sp, $sp, 20			# $sp += 20
+    addi		$sp, $sp, 4			    # $sp += 4
 
     move 		$v0, $zero			    # $v0 = $zero
     jr			$ra					    # jump to $ra
