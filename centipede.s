@@ -45,6 +45,7 @@
     mushroomColor: .word 0x0076c0d6
     blasterColor: .word 0x00ffffff
     dartColor: .word 0x00ffffff
+    fleaColor: .word 0x001efa9b
 
     gameOverTextColor: .word 0x00fc037f
     gameWonTextColor: .word 0x0010e858
@@ -69,6 +70,14 @@
     darts: .word -1:10                   # Array of dart locations where -1 means empty
     dartLength: .word 10                 # Length of the darts array (maximum number of darts that can be present on the screen)
     dartFramesPerMove: .word 1           # Number of frames per movement of the darts
+
+    # Flea
+    fleas: .word -1:5
+    fleaLength: .word 5
+    fleaFramesPerMove: .word 3
+    fleaGenFrames: .word 30              # Number of frames to generate flea
+    fleaProb: .word 10                   # Probability to generate flea per generation cycle
+    fleaMaxAmountPerGen: .word 3         # Maximum number of fleas to generate simutaneously
     # --- END Objects
 
     # Personal Space for Bug Blaster
@@ -686,6 +695,53 @@ control_darts:
     jr			$ra					# jump to $ra
 
 # END FUN control_darts
+
+# FUN control_flea
+# ARGS:
+# $a0: current frame number
+control_flea:
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    la			$s0, fleas			    # 
+    lw			$s1, fleaLength			# 
+    lw			$s2, fleaColor			# 
+    lw			$s3, backgroundColor			# 
+
+    # TODO handle flea generation
+
+    # Clear old fleas
+    move 		$a0, $s0			    # $a0 = $s0
+    move 		$a1, $s1			    # $a1 = $s1
+    move 		$a2, $s3			    # $a2 = $s3
+    jal			draw_multiple_flea	    # jump to draw_multiple_flea and save position to $ra
+    
+    # Calculate next position
+    move 		$a0, $s0			    # $a0 = $s0
+    move 		$a1, $s1			    # $a1 = $s1
+    jal			move_multiple_flea	    # jump to move_multiple_flea and save position to $ra
+    
+    # Draw new flea
+    move 		$a0, $s0			    # $a0 = $s0
+    move 		$a1, $s1			    # $a1 = $s1
+    move 		$a2, $s2			    # $a2 = $s2
+    jal			draw_multiple_flea	    # jump to draw_multiple_flea and save position to $ra
+
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+
+    move 		$v0, $zero			# $v0 = $zero
+    jr			$ra					# jump to $ra
+
+# END FUN control_flea
 
 ##############################################
 # # Object Movement Logic
