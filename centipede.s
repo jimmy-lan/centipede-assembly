@@ -974,6 +974,35 @@ generate_mushrooms:
 
 # END FUN generate_mushrooms
 
+# FUN move_multiple_flea
+# ARGS:
+# $a0: address of the flea array
+# $a1: length of the flea array
+move_multiple_flea:
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    # Load parameters
+    move 		$s0, $a0			    # $s0 = address of the flea array
+    move 		$s1, $a1			    # $s1 = length of the flea array
+
+    
+
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+
+    move 		$v0, $zero			    # $v0 = $zero
+    jr			$ra					    # jump to $ra
+
+# END FUN move_multiple_flea
 # FUN move_flea
 # ARGS:
 # $a0: current location of flea (object grid)
@@ -986,7 +1015,7 @@ move_flea:
     sw			$s3, 4($sp)
     sw			$ra, 0($sp)
 
-    # Save parameters
+    # Load parameters
     move 		$s0, $a0			                # $s0 = current flea location (object grid)
 
     # Move the flea one row downward
