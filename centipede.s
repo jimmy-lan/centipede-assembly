@@ -507,6 +507,78 @@ detect_mushroom_dart_collision:
 
 # END FUN detect_mushroom_dart_collision
 
+# FUN detect_flea_dart_collision
+# - Detect and respond to collision event of a flea with a dart.
+# - This function IS INTENDED TO mutate static data if appropriate.
+# ARGS:
+detect_flea_dart_collision:
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    li			$s0, 0				    # $s0 = 0
+    la			$s1, darts			    # 
+
+    # Load $s3 with fleaLength * 4, which is the address of the last (exclusive) element in the flea array.
+    lw			$s3, fleaLength			# 
+    li			$t1, 4				    # $t1 = 4
+    mult	    $s3, $t1			    # $s3 * $t1 = Hi and Lo registers
+    mflo	    $s3					    # copy Lo to $s3
+
+    dfdc_darts_loop:
+        lw			$t0, 0($s1)			            # current dart location
+        
+        # The reason to have an accessor here is because $s2 can be later used
+        # to access fleaCurrentLives array in this function.
+        li			$s2, 0				            # $s2 = 0, the flea array accessor
+        dfdc_flea_loop:
+            lw			$t1, fleas($s2)			            # current flea location
+            
+            beq			$t0, $t1, dfdc_respond_collision	# if $t0 == $t1 then dfdc_respond_collision
+            j			dfdc_respond_collision_end			# jump to dfdc_respond_collision_end
+    
+            dfdc_respond_collision:
+            lw			$t2, fleaCurrentLives($s2)			# current lives of flea
+            subi		$t2, $t2, 1			                # decrement live
+            sw			$t2, fleaCurrentLives($s2)			# save new health
+            
+            bne			$t2, 0, dfdc_respond_collision_end	# if $t2 != 0 then dfdc_respond_collision_end
+            
+            # If current live is 0, remove flea as well
+            li			$t2, -1				                # $t2 = -1
+            sw			$t2, fleas($s2)			            # Clear flea from the fleas array
+            
+            # Remove drawing from the screen due to optimized rendering
+            move 		$a0, $t1			                # $a0 = flea location before removal
+            jal			fill_background_at_location		    # jump to fill_background_at_location and save position to $ra
+            
+            dfdc_respond_collision_end:
+
+            # Loop counter
+            addi		$s2, $s2, 4			        # $s2 = $s2 + 4
+            blt			$s2, $s3, dfdc_flea_loop	# if $s2 < $s3 then dfdc_flea_loop
+
+        # Loop counter
+        lw			$t0, dartLength			        # 
+        addi		$s0, $s0, 1			            # $s0 = $s0 + 1
+        addi		$s1, $s1, 4			            # $s1 = $s1 + 4
+        blt			$s0, $t0, dfdc_darts_loop	    # if $s0 < $t0 then dfdc_darts_loop
+
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+
+    move 		$v0, $zero			    # $v0 = $zero
+    jr			$ra					    # jump to $ra
+
+# END FUN detect_flea_dart_collision
+
 # FUN detect_centipede_blaster_collision
 # - Detect and respond to collision event of the centipede with blaster.
 # - This function IS INTENDED TO mutate static data if appropriate.
@@ -1096,7 +1168,7 @@ generate_flea:
     syscall
     move 		$t0, $a0			                # $t0 = result
     # If do not meet generation probability, terminate
-    bge			$t0, $s1, end_generate_flea	# if $t0 >= $s1 then end_generate_flea
+    bge			$t0, $s1, end_generate_flea	        # if $t0 >= $s1 then end_generate_flea
     # --- END Do not generate if probability is not met
 
     # --- Determine how many fleas to generate
