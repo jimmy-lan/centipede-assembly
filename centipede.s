@@ -40,12 +40,13 @@
     # --- Colors
     backgroundColor: .word 0x00000000
     centipedeColor: .word 0x00f7a634
-    centipedeHeadColor: .word 0x00e09b3a
+    centipedeHeadColor: .word 0x00e35819
     mushroomFullLivesColor: .word 0x004394f0
     mushroomColor: .word 0x0076c0d6
     blasterColor: .word 0x00ffffff
     dartColor: .word 0x00ffffff
-    fleaColor: .word 0x001efa9b
+    fleaColor: .word 0x00ee1df5         # Color of a flea that does not leave mushrooms
+    fleaLeaveMushroomColor: .word 0x001efa9b    # Color of a flea that leaves mushrooms
 
     gameOverTextColor: .word 0x00fc037f
     gameWonTextColor: .word 0x0010e858
@@ -74,13 +75,16 @@
     # Flea
     fleas: .word -1:5
     fleaLength: .word 5
+    fleaCurrentLives: .word 0:5                 # Current health of the fleas
+    fleaMaxLives: .word 2                          # Maximum lives per flea
     fleaFramesPerMove: .word 2
-    fleaFramesPerGen: .word 30            # Number of frames to generate flea
-    fleaGenProb: .word 20                 # Probability to generate flea per generation cycle
-    fleaMaxAmountPerGen: .word 3         # Maximum number of fleas to generate simutaneously
-    fleaMushroomProbUpper: .word 5     # Probability of fleas leaving mushroom on the upper half of screen
-    fleaMushroomProbLower: .word 15      # Probability of fleas leaving mushroom on the lower half of screen
-    fleaMushroomProbSplitLocation: .word 210        # Location at which the flea changes probability of generating mushroom
+    fleaFramesPerGen: .word 30                  # Number of frames to generate flea
+    fleaGenProb: .word 15                       # Probability to generate flea per generation cycle
+    fleaMaxAmountPerGen: .word 3                # Maximum number of fleas to generate simutaneously
+    fleaMushroomProbUpper: .word 5              # Probability of fleas leaving mushroom on the upper half of screen
+    fleaMushroomProbLower: .word 30             # Probability of fleas leaving mushroom on the lower half of screen
+    fleaMushroomProbSplitLocation: .word 210    # Location at which the flea changes probability of generating mushroom
+    fleaLeaveMushroomThreshold: .word 35        # Leave mushroom if number of mushrooms in area is less than this number
     # --- END Objects
 
     # Personal Space for Bug Blaster
@@ -175,6 +179,55 @@ program_exit:
 ############################################################################################
 
 ##############################################
+# # Levels and restarts
+##############################################
+
+# FUN await_restart
+# - After game is over or the player beats the game, this
+# - function should be invoked to listen for restart key press.
+# - "r": restart the game
+# - "q": quit game
+# ARGS:
+await_restart:
+    addi		$sp, $sp, -20			                    # $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    await_restart_loop:
+        # Load keypress indicator
+        lw          $s6, 0xffff0000                         # load key-press indicator
+
+        beq			$s6, 0x71, await_restart_handle_q	    # if $s6 == 0x71 then await_restart_handle_q
+        beq			$s6, 0x72, await_restart_handle_r	# if $s6 == 0x72 then await_restart_handle_r
+        
+        j			await_restart_handle_end		        # jump to await_restart_handle_end
+        
+        await_restart_handle_r:
+        # TODO load level
+
+        await_restart_handle_q:
+        j			program_exit				# jump to program_exit
+        
+        await_restart_handle_end:
+
+        j			await_restart_loop				        # jump to await_restart_loop
+        
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			                    # $sp += 20
+
+    move 		$v0, $zero			                        # $v0 = $zero
+    jr			$ra					                        # jump to $ra
+
+# END FUN await_restart
+
+##############################################
 # # Game Rules
 ##############################################
 
@@ -192,12 +245,14 @@ enforce_game_rules:
     sw			$s3, 4($sp)
     sw			$ra, 0($sp)
 
-    jal			detect_centipede_dart_collision		# jump to detect_centipede_dart_collision and save position to $ra
-    
-    jal			detect_mushroom_dart_collision	    # jump to detect_mushroom_dart_collision and save position to $ra
+    # Collision detection
+    jal			detect_centipede_dart_collision		    # jump to detect_centipede_dart_collision and save position to $ra
+    jal			detect_mushroom_dart_collision	        # jump to detect_mushroom_dart_collision and save position to $ra
+    jal			detect_centipede_blaster_collision      # jump to detect_centipede_blaster_collision and save position to $ra
+    jal			detect_flea_blaster_collision			# jump to detect_flea_blaster_collision and save position to $ra
+    jal			detect_flea_dart_collision				# jump to detect_flea_dart_collision and save position to $ra
 
-    jal			detect_centipede_blaster_collision  # jump to detect_centipede_blaster_collision and save position to $ra
-
+    # Other game rules
     jal			detect_centipede_clear_off				# jump to detect_centipede_clear_off and save position to $ra
 
     lw			$s0, 16($sp)
@@ -502,10 +557,95 @@ detect_mushroom_dart_collision:
 
 # END FUN detect_mushroom_dart_collision
 
-# FUN detect_centipede_blaster_collision
+# FUN detect_flea_dart_collision
+# - Detect and respond to collision event of a flea with a dart.
+# - This function IS INTENDED TO mutate static data if appropriate.
 # ARGS:
+detect_flea_dart_collision:
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    li			$s0, 0				    # $s0 = 0
+    la			$s1, darts			    # 
+
+    # Load $s3 with fleaLength * 4, which is the address of the last (exclusive) element in the flea array.
+    lw			$s3, fleaLength			# 
+    li			$t1, 4				    # $t1 = 4
+    mult	    $s3, $t1			    # $s3 * $t1 = Hi and Lo registers
+    mflo	    $s3					    # copy Lo to $s3
+
+    dfdc_darts_loop:
+        lw			$t0, 0($s1)			                # current dart location (display grid)
+        beq			$t0, -1, dfdc_darts_loop_continue	# skip empty dart
+
+        # The reason to have an accessor here is because $s2 can be later used
+        # to access fleaCurrentLives array in this function.
+        li			$s2, 0				            # $s2 = 0, the flea array accessor
+        dfdc_fleas_loop:
+            # Get dart location in object grid
+            lw			$t0, 0($s1)			                # current dart location (display grid)
+            move 		$a0, $t0			                # $a0 = $t0
+            jal			display_to_object_grid_location		# jump to display_to_object_grid_location and save position to $ra
+            move 		$t0, $v0			                # $t0 = $v0
+
+            lw			$t1, fleas($s2)			            # current flea location (object grid)
+
+            beq			$t1, -1, dfdc_fleas_loop_continue	# skip empty flea
+
+            beq			$t0, $t1, dfdc_respond_collision	# if $t0 == $t1 then dfdc_respond_collision
+            j			dfdc_respond_collision_end			# jump to dfdc_respond_collision_end
+    
+            dfdc_respond_collision:
+            lw			$t2, fleaCurrentLives($s2)			# current lives of flea
+            subi		$t2, $t2, 1			                # decrement live
+            sw			$t2, fleaCurrentLives($s2)			# save new health
+            li			$t3, -1				                # $t3 = -1
+            sw			$t3, 0($s1)			                # remove dart
+
+            bne			$t2, 0, dfdc_respond_collision_end	# if $t2 != 0 then dfdc_respond_collision_end
+            
+            # If current live is 0, remove flea
+            li			$t2, -1				                # $t2 = -1
+            sw			$t2, fleas($s2)			            # Clear flea from the fleas array
+            
+            # Remove drawing from the screen due to optimized rendering
+            move 		$a0, $t1			                # $a0 = flea location before removal
+            jal			fill_background_at_location		    # jump to fill_background_at_location and save position to $ra
+            
+            dfdc_respond_collision_end:
+
+            # Loop counter
+            dfdc_fleas_loop_continue:
+            addi		$s2, $s2, 4			        # $s2 = $s2 + 4
+            blt			$s2, $s3, dfdc_fleas_loop	# if $s2 < $s3 then dfdc_fleas_loop
+
+        # Loop counter
+        dfdc_darts_loop_continue:
+        lw			$t0, dartLength			        # 
+        addi		$s0, $s0, 1			            # $s0 = $s0 + 1
+        addi		$s1, $s1, 4			            # $s1 = $s1 + 4
+        blt			$s0, $t0, dfdc_darts_loop	    # if $s0 < $t0 then dfdc_darts_loop
+
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+
+    move 		$v0, $zero			    # $v0 = $zero
+    jr			$ra					    # jump to $ra
+
+# END FUN detect_flea_dart_collision
+
+# FUN detect_centipede_blaster_collision
 # - Detect and respond to collision event of the centipede with blaster.
 # - This function IS INTENDED TO mutate static data if appropriate.
+# ARGS:
 # RETURN $v0: 0
 detect_centipede_blaster_collision:
     addi		$sp, $sp, -20			# $sp -= 20
@@ -548,6 +688,50 @@ detect_centipede_blaster_collision:
     jr			$ra					# jump to $ra
 
 # END FUN detect_centipede_blaster_collision
+
+# FUN detect_flea_blaster_collision
+# - Detect and respond to collision event of fleas with blaster.
+# - This function IS INTENDED TO mutate static data if appropriate.
+# ARGS:
+detect_flea_blaster_collision:
+    addi		$sp, $sp, -20			    # $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    la			$s0, fleas			        # 
+    lw			$s1, fleaLength			    # 
+    lw			$s2, blasterLocation		# 
+    
+    li			$s3, 0				        # $s3 = 0
+    dfbc_loop:
+        lw			$t0, 0($s0)			                    # current flea
+        bne			$s2, $t0, dfbc_respond_collision_end	# if $s2 == $t0 then dfbc_respond_collision_end
+        
+        dfbc_respond_collision:
+        # Temporary: game over
+        jal			game_over				            # jump to game_over and save position to $ra
+
+        dfbc_respond_collision_end:
+
+        # Increment loop counter
+        addi		$s0, $s0, 4			                    # $s0 = $s0 + 4
+        addi		$s3, $s3, 1			                    # $s3 = $s3 + 1
+        blt			$s3, $s1, dfbc_loop	                    # if $s3 < $s1 then dfbc_loop
+
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			    # $sp += 20
+
+    move 		$v0, $zero			        # $v0 = $zero
+    jr			$ra					        # jump to $ra
+
+# END FUN detect_flea_blaster_collision
 
 ##############################################
 # # Controllers
@@ -708,59 +892,77 @@ control_darts:
 # ARGS:
 # $a0: current frame number
 control_flea:
-    addi		$sp, $sp, -20			# $sp -= 20
+    addi		$sp, $sp, -20			                # $sp -= 20
     sw			$s0, 16($sp)
     sw			$s1, 12($sp)
     sw			$s2, 8($sp)
     sw			$s3, 4($sp)
     sw			$ra, 0($sp)
 
-    la			$s0, fleas			                # $s0 = address of fleas
-    lw			$s1, fleaLength			            # $s1 = fleaLength
-    lw			$s2, fleaColor			            # $s2 = fleaColor
-    lw			$s3, backgroundColor			    # $s3 = backgroundColor
+    la			$s0, fleas			                    # $s0 = address of fleas
+    lw			$s1, fleaLength			                # $s1 = fleaLength
+    lw			$s2, fleaColor			                # $s2 = fleaColor
+    lw			$s3, backgroundColor			        # $s3 = backgroundColor
 
     # --- Generate flea
-    lw			$t0, fleaFramesPerGen			    # 
-    div			$a0, $t0			                # $a0 / $t0
-    mfhi	    $t3					                # $t3 = $a0 mod $t0
-    bne			$t3, $zero, end_gen_flea       	    # if $t3 != $zero then end_gen_flea
+    lw			$t0, fleaFramesPerGen			        # 
+    div			$a0, $t0			                    # $a0 / $t0
+    mfhi	    $t3					                    # $t3 = $a0 mod $t0
+    bne			$t3, $zero, end_gen_flea       	        # if $t3 != $zero then end_gen_flea
 
-    lw			$a0, fleaMaxAmountPerGen			# 
-    lw			$a1, fleaGenProb			        # 
-    jal			generate_flea				        # jump to generate_flea and save position to $ra
+    lw			$a0, fleaMaxAmountPerGen			    # 
+    lw			$a1, fleaGenProb			            # 
+    jal			generate_flea				            # jump to generate_flea and save position to $ra
 
     end_gen_flea:
     # --- END Generate flea
 
     # --- Move flea and leave mushroom
     # Check if flea should move
-    lw			$t0, fleaFramesPerMove     		    # $t0 = fleaFramesPerMove
-    div			$a0, $t0			                # $a0 / $t0
-    mfhi	    $t3					                # $t3 = $a0 mod $t0
-    bne			$t3, $zero, end_move_flea       	# if $t3 != $zero then end_move_flea
+    lw			$t0, fleaFramesPerMove     		        # $t0 = fleaFramesPerMove
+    div			$a0, $t0			                    # $a0 / $t0
+    mfhi	    $t3					                    # $t3 = $a0 mod $t0
+    bne			$t3, $zero, end_move_flea       	    # if $t3 != $zero then end_move_flea
 
     # Clear old fleas
-    move 		$a0, $s0			                # $a0 = $s0
-    move 		$a1, $s1			                # $a1 = $s1
-    move 		$a2, $s3			                # $a2 = $s3
-    jal			draw_multiple_flea	                # jump to draw_multiple_flea and save position to $ra
+    move 		$a0, $s0			                    # $a0 = $s0
+    move 		$a1, $s1			                    # $a1 = $s1
+    move 		$a2, $s3			                    # $a2 = $s3
+    jal			draw_multiple_flea	                    # jump to draw_multiple_flea and save position to $ra
 	
+    # Check if it is necessary to leave mushrooms
+    la			$a0, mushrooms
+    lw			$a1, fleaMushroomProbSplitLocation
+    lw			$a2, mushroomLength
+    jal			count_mushrooms				            # jump to count_mushrooms and save position to $ra
+    move 		$t0, $v0			                    # $t0 = number of mushrooms in area
+
+    lw			$t1, fleaLeaveMushroomThreshold
+    blt			$t0, $t1, control_flea_leave_mushrooms	# if $t0 < $t1 then control_flea_leave_mushrooms
+
+    j			control_flea_leave_mushrooms_end		# jump to control_flea_leave_mushrooms_end
+
     # Leave mushrooms with defined probability
-    move 		$a0, $s0			                # $a0 = $s0
-    move 		$a1, $s1			                # $a1 = $s1
-    jal			leave_mushrooms_with_fleas			        # jump to leave_mushrooms_with_flea and save position to $ra
+    control_flea_leave_mushrooms:
+    move 		$a0, $s0			                    # $a0 = $s0
+    move 		$a1, $s1			                    # $a1 = $s1
+    jal			leave_mushrooms_with_fleas			    # jump to leave_mushrooms_with_flea and save position to $ra
+
+    # Update flea color to the mushroom-leaving color
+    lw			$s2, fleaLeaveMushroomColor			# 
+    
+    control_flea_leave_mushrooms_end:
     
     # Calculate next position
-    move 		$a0, $s0			                # $a0 = $s0
-    move 		$a1, $s1			                # $a1 = $s1
-    jal			move_multiple_flea	                # jump to move_multiple_flea and save position to $ra
+    move 		$a0, $s0			                    # $a0 = $s0
+    move 		$a1, $s1			                    # $a1 = $s1
+    jal			move_multiple_flea	                    # jump to move_multiple_flea and save position to $ra
     
     # Draw new flea
-    move 		$a0, $s0			                # $a0 = $s0
-    move 		$a1, $s1			                # $a1 = $s1
-    move 		$a2, $s2			                # $a2 = $s2
-    jal			draw_multiple_flea	                # jump to draw_multiple_flea and save position to $ra
+    move 		$a0, $s0			                    # $a0 = $s0
+    move 		$a1, $s1			                    # $a1 = $s1
+    move 		$a2, $s2			                    # $a2 = $s2
+    jal			draw_multiple_flea	                    # jump to draw_multiple_flea and save position to $ra
 
     end_move_flea:
     # --- END Move flea and leave mushroom
@@ -770,10 +972,10 @@ control_flea:
     lw			$s2, 8($sp)
     lw			$s3, 4($sp)
     lw			$ra, 0($sp)
-    addi		$sp, $sp, 20			            # $sp += 20
+    addi		$sp, $sp, 20			                # $sp += 20
 
-    move 		$v0, $zero			                # $v0 = $zero
-    jr			$ra					                # jump to $ra
+    move 		$v0, $zero			                    # $v0 = $zero
+    jr			$ra					                    # jump to $ra
 
 # END FUN control_flea
 
@@ -1029,7 +1231,7 @@ generate_flea:
     syscall
     move 		$t0, $a0			                # $t0 = result
     # If do not meet generation probability, terminate
-    bge			$t0, $s1, end_generate_flea	# if $t0 >= $s1 then end_generate_flea
+    bge			$t0, $s1, end_generate_flea	        # if $t0 >= $s1 then end_generate_flea
     # --- END Do not generate if probability is not met
 
     # --- Determine how many fleas to generate
@@ -1043,10 +1245,10 @@ generate_flea:
     addi		$s2, $t0, 1			                # $s2 = random number from 1 to $s0
     # --- END Determine how many fleas to generate
 
-    la			$s3, fleas				            # $s3 = address of fleas
+    li			$s3, 0				                # $s3 = 0, the array accessor
     li			$t6, 0				                # $t6 = 0, the loop counter
     generate_flea_loop:
-        lw			$t0, 0($s3)			                # current flea element
+        lw			$t0, fleas($s3)			            # current flea element
         bne			$t0, -1, generate_flea_skip	        # if $t0 != -1 then generate_flea_skip
         
         # Generate flea and save to 0($s3)
@@ -1063,7 +1265,9 @@ generate_flea:
         # --- END Generate random number from 0 to (screenPixelUnits - 1)
 
         # Save back location
-        sw			$t0, 0($s3)			                # 
+        sw			$t0, fleas($s3)			            # 
+        lw			$t2, fleaMaxLives			            # load maximum number of lives that a flea can have
+        sw			$t2, fleaCurrentLives($s3)			# 
         
         subi		$s2, $s2, 1			                # $s3 = $s3 - 1
         beq			$s2, 0, end_generate_flea	        # if $s3 == 0 then end_generate_flea
@@ -2239,6 +2443,59 @@ sleep:
     jr			$ra					    # jump to $ra
 
 # END FUN sleep
+
+# FUN count_mushrooms
+# ARGS:
+# $a0: address of the mushrooms array
+# $a1: location to start counting (inclusive)
+# $a2: location to end counting (exclusive)
+# RETURN $v0: number of mushrooms present in the interval
+count_mushrooms:
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    # Load parameters
+    move 		$s0, $a0			# $s0 = address of the mushrooms array
+    move 		$s1, $a1			# $s1 = location to start counting (inclusive)
+    move 		$s2, $a2			# $s2 = location to end counting (exclusive)
+
+    # Advance to the start element
+    li			$t0, 4				# $t0 = 4
+    mult	    $s1, $t0			# $s1 * $t0 = Hi and Lo registers
+    mflo	    $t1					# copy Lo to $t1
+    add 		$s0, $s0, $t1		# $s0 = $s0 + $t1
+
+    # Mushroom counter
+    li			$s3, 0				# $s3 = 0
+
+    count_mushrooms_loop:
+        lw			$t0, 0($s0)			                    # load current mushroom
+        beq			$t0, 0, count_mushrooms_loop_continue	# if $t0 == 0 then count_mushrooms_loop_continue
+        
+        addi		$s3, $s3, 1			                    # $s3 = $s3 + 1
+
+        # Increment loop counter
+        count_mushrooms_loop_continue:
+        addi		$s0, $s0, 4			                    # $s0 = $s0 + 4
+        addi		$s1, $s1, 1			                    # $s1 = $s1 + 1
+        blt			$s1, $s2, count_mushrooms_loop	        # if $s1 < $s2 then count_mushrooms_loop
+
+    move 		$v0, $s3			    # $v0 = $s3
+
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+
+    jr			$ra					    # jump to $ra
+
+# END FUN count_mushrooms
 
 # FUN object_to_display_grid_location
 # ARGS:
