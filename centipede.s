@@ -362,10 +362,15 @@ init_current_level:
     j			init_level_end				    # jump to init_level_end
 
     init_level_end:
+    # Reset the fleas array
+    la			$a0, fleas			            # 
+    lw			$a1, fleaLength		            # 
+    jal			remove_fleas				    # jump to remove_fleas and save position to $ra
+    
     # Initialize mushrooms
-    lw			$a0, mushroomInitQuantity			# Number of mushrooms to generate
-    lw			$a1, mushroomLives			        # Number of "lives" per mushroom
-    jal			generate_mushrooms				    # jump to generate_mushrooms and save position to $ra
+    lw			$a0, mushroomInitQuantity		# Number of mushrooms to generate
+    lw			$a1, mushroomLives			    # Number of "lives" per mushroom
+    jal			generate_mushrooms				# jump to generate_mushrooms and save position to $ra
 
     # Clear mushrooms in initial centipede locations
     la			$a0, centipedeLocations			# 
