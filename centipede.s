@@ -75,7 +75,7 @@
     fleas: .word -1:5
     fleaLength: .word 5
     fleaFramesPerMove: .word 3
-    fleaGenFrames: .word 30              # Number of frames to generate flea
+    fleaFramesPerGen: .word 30            # Number of frames to generate flea
     fleaProb: .word 10                   # Probability to generate flea per generation cycle
     fleaMaxAmountPerGen: .word 3         # Maximum number of fleas to generate simutaneously
     # --- END Objects
@@ -707,14 +707,23 @@ control_flea:
     sw			$s3, 4($sp)
     sw			$ra, 0($sp)
 
-    la			$s0, fleas			    # 
-    lw			$s1, fleaLength			# 
-    lw			$s2, fleaColor			# 
-    lw			$s3, backgroundColor			# 
+    la			$s0, fleas			                # $s0 = address of fleas
+    lw			$s1, fleaLength			            # $s1 = fleaLength
+    lw			$s2, fleaColor			            # $s2 = fleaColor
+    lw			$s3, backgroundColor			    # $s3 = backgroundColor
 
-    # TODO handle flea generation
-    lw			$t0, fleaGenFrames			# 
-    
+    # --- Generate flea
+    lw			$t0, fleaFramesPerGen			    # 
+    div			$a0, $t0			                # $a0 / $t0
+    mfhi	    $t3					                # $t3 = $a0 mod $t0
+    bne			$t3, $zero, end_gen_flea       	    # if $t3 != $zero then end_gen_flea
+
+    lw			$a0, fleaMaxAmountPerGen			# 
+    lw			$a1, fleaProb			            # 
+    jal			generate_flea				        # jump to generate_flea and save position to $ra
+
+    end_gen_flea:
+    # --- END Generate flea
 
     # --- Move flea
     # Check if flea should move
