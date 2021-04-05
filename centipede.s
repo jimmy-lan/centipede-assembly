@@ -362,11 +362,15 @@ init_current_level:
     j			init_level_end				    # jump to init_level_end
 
     init_level_end:
-
     # Initialize mushrooms
     lw			$a0, mushroomInitQuantity			# Number of mushrooms to generate
     lw			$a1, mushroomLives			        # Number of "lives" per mushroom
     jal			generate_mushrooms				    # jump to generate_mushrooms and save position to $ra
+
+    # Clear mushrooms in initial centipede locations
+    la			$a0, centipedeLocations			# 
+    lw			$a1, centipedeLength			# 
+    jal			remove_mushrooms				# jump to remove_mushrooms and save position to $ra
 
     j			init_current_level_end			# jump to init_current_level_end
     
@@ -413,9 +417,12 @@ await_restart:
         j			await_restart_handle_end		        # jump to await_restart_handle_end
         
         await_restart_handle_r:
-        # TODO load level
+        lw			$a0, currentLevel			            # $a0 = currentLevel
+        jal			init_current_level				        # jump to init_current_level and save position to $ra
 
-        j			await_restart_handle_end				# jump to await_restart_handle_end
+        jal			clear_screen_drawings				    # jump to clear_screen_drawings and save position to $ra
+        
+        j			await_restart_end       				# jump to await_restart_handle_end
 
         await_restart_handle_q:
         j			program_exit				            # jump to program_exit
@@ -425,7 +432,8 @@ await_restart:
         await_restart_loop_continue:
         jal			sleep				                    # jump to sleep and save position to $ra
         j			await_restart_loop				        # jump to await_restart_loop
-        
+    
+    await_restart_end:
     lw			$s0, 16($sp)
     lw			$s1, 12($sp)
     lw			$s2, 8($sp)
@@ -1648,8 +1656,8 @@ generate_mushrooms:
         move 		$t0, $a0			                # $t0 = random number generated
 
         # If the generated mushroom is in the first row, then skip adding this mushroom
-        lw			$t1, screenPixelUnits			    # 
-        blt			$t0, $t1, gml_skip	                # if $t0 < $t1 then gml_skip
+        # lw			$t1, screenPixelUnits			    # 
+        # blt			$t0, $t1, gml_skip	                # if $t0 < $t1 then gml_skip
 
         # Multiply $t0 by 4 to get the location in mushroom array
         addi		$t1, $zero, 4			            # $t1 = $zero + 4
@@ -1967,6 +1975,139 @@ move_centipede_segment:
     jr			$ra					                # jump to $ra
 
 # END FUN move_centipede_segment
+
+# FUN count_mushrooms
+# ARGS:
+# $a0: address of the mushrooms array
+# $a1: location to start counting (inclusive)
+# $a2: location to end counting (exclusive)
+# RETURN $v0: number of mushrooms present in the interval
+count_mushrooms:
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    # Load parameters
+    move 		$s0, $a0			# $s0 = address of the mushrooms array
+    move 		$s1, $a1			# $s1 = location to start counting (inclusive)
+    move 		$s2, $a2			# $s2 = location to end counting (exclusive)
+
+    # Advance to the start element
+    li			$t0, 4				# $t0 = 4
+    mult	    $s1, $t0			# $s1 * $t0 = Hi and Lo registers
+    mflo	    $t1					# copy Lo to $t1
+    add 		$s0, $s0, $t1		# $s0 = $s0 + $t1
+
+    # Mushroom counter
+    li			$s3, 0				# $s3 = 0
+
+    count_mushrooms_loop:
+        lw			$t0, 0($s0)			                    # load current mushroom
+        beq			$t0, 0, count_mushrooms_loop_continue	# if $t0 == 0 then count_mushrooms_loop_continue
+        
+        addi		$s3, $s3, 1			                    # $s3 = $s3 + 1
+
+        # Increment loop counter
+        count_mushrooms_loop_continue:
+        addi		$s0, $s0, 4			                    # $s0 = $s0 + 4
+        addi		$s1, $s1, 1			                    # $s1 = $s1 + 1
+        blt			$s1, $s2, count_mushrooms_loop	        # if $s1 < $s2 then count_mushrooms_loop
+
+    move 		$v0, $s3			    # $v0 = $s3
+
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+
+    jr			$ra					    # jump to $ra
+
+# END FUN count_mushrooms
+
+# FUN remove_mushrooms
+# ARGS:
+# $a0: address of location array indicating where to remove mushrooms (object grid)
+# $a1: length of location array
+remove_mushrooms:
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    move 		$s0, $a0			# $s0 = $a0
+    move 		$s1, $a1			# $s1 = $a1
+
+    li			$s3, 0				# $s3 = 0
+    remove_mushrooms_loop:
+        lw			$t0, 0($s0)			# 
+        li			$t1, 4				# $t1 = 4
+        mult	    $t0, $t1			# $t0 * $t1 = Hi and Lo registers
+        mflo	    $t2					# copy Lo to $t2
+        li			$t1, 0				# $t1 = 0
+        sw			$t1, mushrooms($t2)	# 
+
+        # Increment loop counters
+        addi		$s0, $s0, 4			# $s0 = $s0 + 4
+        addi		$s3, $s3, 1			# $s3 = $s3 + 1
+        blt			$s3, $s1, remove_mushrooms_loop	# if $s3 < $s1 then remove_mushrooms_loop
+
+
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+
+    move 		$v0, $zero			# $v0 = $zero
+    jr			$ra					# jump to $ra
+
+# END FUN remove_mushrooms
+
+# FUN remove_fleas
+# ARGS:
+# $a0: address of the flea array
+# $a1: length of the flea array
+remove_fleas:
+    addi		$sp, $sp, -20			            # $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    # Load parameters
+    move 		$a0, $s0			                # $a0 = address of the flea array
+    move 		$a1, $s1			                # $a1 = length of the flea array
+
+    li			$s3, 0				                # $s3 = 0, the loop counter
+    remove_fleas_loop:
+        li			$t0, -1				            # $t0 = -1
+        lw			$t0, 0($s0)			# 
+
+        # Increment loop counter
+        addi		$s0, $s0, 4			            # $s0 = $s0 + 4
+        addi		$s3, $s3, 1			            # $s3 = $s3 + 1
+        blt			$s3, $s1, remove_fleas_loop	    # if $s3 < $s1 then remove_fleas_loop
+
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			            # $sp += 20
+
+    move 		$v0, $zero			                # $v0 = $zero
+    jr			$ra					                # jump to $ra
+
+# END FUN remove_fleas
 
 ##############################################
 # # Graphics
@@ -2657,59 +2798,6 @@ sleep:
 
 # END FUN sleep
 
-# FUN count_mushrooms
-# ARGS:
-# $a0: address of the mushrooms array
-# $a1: location to start counting (inclusive)
-# $a2: location to end counting (exclusive)
-# RETURN $v0: number of mushrooms present in the interval
-count_mushrooms:
-    addi		$sp, $sp, -20			# $sp -= 20
-    sw			$s0, 16($sp)
-    sw			$s1, 12($sp)
-    sw			$s2, 8($sp)
-    sw			$s3, 4($sp)
-    sw			$ra, 0($sp)
-
-    # Load parameters
-    move 		$s0, $a0			# $s0 = address of the mushrooms array
-    move 		$s1, $a1			# $s1 = location to start counting (inclusive)
-    move 		$s2, $a2			# $s2 = location to end counting (exclusive)
-
-    # Advance to the start element
-    li			$t0, 4				# $t0 = 4
-    mult	    $s1, $t0			# $s1 * $t0 = Hi and Lo registers
-    mflo	    $t1					# copy Lo to $t1
-    add 		$s0, $s0, $t1		# $s0 = $s0 + $t1
-
-    # Mushroom counter
-    li			$s3, 0				# $s3 = 0
-
-    count_mushrooms_loop:
-        lw			$t0, 0($s0)			                    # load current mushroom
-        beq			$t0, 0, count_mushrooms_loop_continue	# if $t0 == 0 then count_mushrooms_loop_continue
-        
-        addi		$s3, $s3, 1			                    # $s3 = $s3 + 1
-
-        # Increment loop counter
-        count_mushrooms_loop_continue:
-        addi		$s0, $s0, 4			                    # $s0 = $s0 + 4
-        addi		$s1, $s1, 1			                    # $s1 = $s1 + 1
-        blt			$s1, $s2, count_mushrooms_loop	        # if $s1 < $s2 then count_mushrooms_loop
-
-    move 		$v0, $s3			    # $v0 = $s3
-
-    lw			$s0, 16($sp)
-    lw			$s1, 12($sp)
-    lw			$s2, 8($sp)
-    lw			$s3, 4($sp)
-    lw			$ra, 0($sp)
-    addi		$sp, $sp, 20			# $sp += 20
-
-    jr			$ra					    # jump to $ra
-
-# END FUN count_mushrooms
-
 # FUN copy_array
 # - Copy values from array 1 to array 2
 # ARGS:
@@ -2755,48 +2843,6 @@ copy_array:
     jr			$ra					# jump to $ra
 
 # END FUN copy_array
-
-# FUN remove_mushrooms
-# ARGS:
-# $a0: address of location array indicating where to remove mushrooms (object grid)
-# $a1: length of location array
-remove_mushrooms:
-    addi		$sp, $sp, -20			# $sp -= 20
-    sw			$s0, 16($sp)
-    sw			$s1, 12($sp)
-    sw			$s2, 8($sp)
-    sw			$s3, 4($sp)
-    sw			$ra, 0($sp)
-
-    move 		$s0, $a0			# $s0 = $a0
-    move 		$s1, $a1			# $s1 = $a1
-
-    li			$s3, 0				# $s3 = 0
-    remove_mushrooms_loop:
-        lw			$t0, 0($s0)			# 
-        li			$t1, 4				# $t1 = 4
-        mult	    $t0, $t1			# $t0 * $t1 = Hi and Lo registers
-        mflo	    $t2					# copy Lo to $t2
-        li			$t1, 0				# $t1 = 0
-        sw			$t1, mushrooms($t2)	# 
-
-        # Increment loop counters
-        addi		$s0, $s0, 4			# $s0 = $s0 + 4
-        addi		$s3, $s3, 1			# $s3 = $s3 + 1
-        blt			$s3, $s1, remove_mushrooms_loop	# if $s3 < $s1 then remove_mushrooms_loop
-        
-
-    lw			$s0, 16($sp)
-    lw			$s1, 12($sp)
-    lw			$s2, 8($sp)
-    lw			$s3, 4($sp)
-    lw			$ra, 0($sp)
-    addi		$sp, $sp, 20			# $sp += 20
-
-    move 		$v0, $zero			# $v0 = $zero
-    jr			$ra					# jump to $ra
-
-# END FUN remove_mushrooms
 
 # FUN object_to_display_grid_location
 # ARGS:
