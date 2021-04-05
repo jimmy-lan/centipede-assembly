@@ -503,9 +503,9 @@ detect_mushroom_dart_collision:
 # END FUN detect_mushroom_dart_collision
 
 # FUN detect_centipede_blaster_collision
-# ARGS:
 # - Detect and respond to collision event of the centipede with blaster.
 # - This function IS INTENDED TO mutate static data if appropriate.
+# ARGS:
 # RETURN $v0: 0
 detect_centipede_blaster_collision:
     addi		$sp, $sp, -20			# $sp -= 20
@@ -548,6 +548,50 @@ detect_centipede_blaster_collision:
     jr			$ra					# jump to $ra
 
 # END FUN detect_centipede_blaster_collision
+
+# FUN detect_flea_blaster_collision
+# - Detect and respond to collision event of fleas with blaster.
+# - This function IS INTENDED TO mutate static data if appropriate.
+# ARGS:
+detect_flea_blaster_collision:
+    addi		$sp, $sp, -20			    # $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    la			$s0, fleas			        # 
+    lw			$s1, fleaLength			    # 
+    lw			$s2, blasterLocation		# 
+    
+    li			$s3, 0				        # $s3 = 0
+    dfbc_loop:
+        lw			$t0, 0($s0)			                    # current flea
+        bne			$s2, $t0, dfbc_respond_collision_end	# if $s2 == $t0 then dfbc_respond_collision_end
+        
+        dfbc_respond_collision:
+        # Temporary: game over
+        jal			game_over				            # jump to game_over and save position to $ra
+
+        dfbc_respond_collision_end:
+
+        # Increment loop counter
+        addi		$s0, $s0, 4			                    # $s0 = $s0 + 4
+        addi		$s3, $s3, 1			                    # $s3 = $s3 + 1
+        blt			$s3, $s1, dfbc_loop	                    # if $s3 < $s1 then dfbc_loop
+
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			    # $sp += 20
+
+    move 		$v0, $zero			        # $v0 = $zero
+    jr			$ra					        # jump to $ra
+
+# END FUN detect_flea_blaster_collision
 
 ##############################################
 # # Controllers
