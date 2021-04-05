@@ -1390,6 +1390,17 @@ draw_multiple_flea:
     move 		$s1, $a1			        # $s1 = length of the flea array
     move 		$s2, $a2			        # $s2 = color of flea
 
+    li			$s3, 0				        # $s3 = 0, the loop counter
+    draw_multiple_flea_loop:
+        lw			$a0, 0($s0)			                # $a0 = location of the current flea
+        move 		$a1, $s2			                # $a1 = $s2
+        jal			draw_flea				# jump to draw_flea and save position to $ra
+        
+        # Increment loop counter
+        addi		$s0, $s0, 4			                # $s0 = $s0 + 4
+        addi		$s3, $s3, 1			                # $s3 = $s3 + 1
+        blt			$s3, $s1, draw_multiple_flea_loop	# if $s3 < $s1 then draw_multiple_flea_loop
+
     lw			$s0, 16($sp)
     lw			$s1, 12($sp)
     lw			$s2, 8($sp)
