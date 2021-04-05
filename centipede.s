@@ -200,19 +200,26 @@ await_restart:
         # Load keypress indicator
         lw          $s6, 0xffff0000                         # load key-press indicator
 
-        beq			$s6, 0x71, await_restart_handle_q	    # if $s6 == 0x71 then await_restart_handle_q
-        beq			$s6, 0x72, await_restart_handle_r	# if $s6 == 0x72 then await_restart_handle_r
+        bne			$s6, 1, await_restart_loop_continue	    # if $s6 != 1 then await_restart_loop_continue
+
+        lw			$t0, 0xffff0004			                # load key being pressed
+        beq			$t0, 0x71, await_restart_handle_q	    # if $s6 == 0x71 then await_restart_handle_q
+        beq			$t0, 0x72, await_restart_handle_r	# if $s6 == 0x72 then await_restart_handle_r
         
         j			await_restart_handle_end		        # jump to await_restart_handle_end
         
         await_restart_handle_r:
         # TODO load level
 
+        j			await_restart_handle_end				# jump to await_restart_handle_end
+
         await_restart_handle_q:
-        j			program_exit				# jump to program_exit
+        j			program_exit				            # jump to program_exit
         
         await_restart_handle_end:
 
+        await_restart_loop_continue:
+        jal			sleep				                    # jump to sleep and save position to $ra
         j			await_restart_loop				        # jump to await_restart_loop
         
     lw			$s0, 16($sp)
@@ -296,7 +303,7 @@ detect_centipede_clear_off:
 
     # Respond to clear off event
     jal			game_won				        # jump to game_won and save position to $ra
-
+    
     dcco_end:
     lw			$s0, 16($sp)
     lw			$s1, 12($sp)
@@ -330,8 +337,8 @@ game_won:
     lw			$a2, gameWonTextColor			    # 
     jal			fill_color_squares				    # jump to fill_color_squares and save position to $ra
     
-    # Terminate program
-    j			program_exit				        # jump to program_exit
+    # Enter await restart procedure
+    jal			await_restart				        # jump to await_restart and save position to $ra
 
     lw			$s0, 16($sp)
     lw			$s1, 12($sp)
@@ -364,8 +371,8 @@ game_over:
     lw			$a2, gameOverTextColor			    # 
     jal			fill_color_squares				    # jump to fill_color_squares and save position to $ra
     
-    # Terminate program
-    j			program_exit				        # jump to program_exit
+    # Enter await restart procedure
+    jal			await_restart				        # jump to await_restart and save position to $ra
 
     lw			$s0, 16($sp)
     lw			$s1, 12($sp)
@@ -669,6 +676,7 @@ detect_centipede_blaster_collision:
         dcbc_respond_collision:
         # Temporary: game over
         jal			game_over				            # jump to game_over and save position to $ra
+        j			dcbc_end				# jump to dcbc_end
         
         dcbc_respond_collision_end:
 
@@ -677,6 +685,7 @@ detect_centipede_blaster_collision:
         addi		$s2, $s2, 1			                # $s2 = $s2 + 1
         blt			$s2, $s1, dcbc_loop	                # if $s2 < $s1 then dcbc_loop
 
+    dcbc_end:
     lw			$s0, 16($sp)
     lw			$s1, 12($sp)
     lw			$s2, 8($sp)
