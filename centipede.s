@@ -1264,7 +1264,6 @@ draw_centipede_segment:
     
     move 		$t0, $a3			        # $t0 = $a3
     lw			$t1, screenLineWidth	    # $t1 = screenLineWidth
-    lw			$t4, screenLineUnusedWidth  # $t4 = screenLineUnusedWidth
 
     # Draw a segment of centipede (3x3 block)
     # First line
@@ -1291,6 +1290,59 @@ draw_centipede_segment:
     jr			$ra					        # jump to $ra
 
 # END FUN draw_centipede_segment
+
+# FUN draw_flea
+# ARGS:
+# $a0: location of flea (object grid)
+# $a1: color of flea
+draw_flea:
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    move 		$s0, $a0			# $s0 = location of flea (object grid)
+    move 		$s1, $a1			# $s1 = color of flea
+
+    move 		$a1, $zero			        # $a1 = $zero
+    jal			calc_display_address	    # jump to calc_display_address and save position to $ra
+    move 		$t2, $v0			        # $t2 = $v0
+
+    move 		$t0, $s1			        # $t0 = $a3
+    lw			$t1, screenLineWidth	    # $t1 = screenLineWidth
+    lw			$t9, backgroundColor		# $t9 = backgroundColor
+    
+    # Draw flea
+    # First line
+    sw			$t0, 0($t2)
+    sw			$t0, 4($t2)
+    sw			$t0, 8($t2)
+    
+    # Second line
+    add		    $t2, $t2, $t1			    # $t2 = $t2 + $t1, goes to the next line at this location
+    sw			$t9, 0($t2)
+    sw			$t0, 4($t2)
+    sw			$t9, 8($t2)
+
+    # Third line
+    add		    $t2, $t2, $t1			    # $t2 = $t2 + $t1, goes to the next line at this location
+    sw			$t0, 0($t2)
+    sw			$t9, 4($t2)
+    sw			$t0, 8($t2)
+
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+
+    move 		$v0, $zero			# $v0 = $zero
+    jr			$ra					# jump to $ra
+
+# END FUN draw_flea
 
 # FUN draw_blaster
 # ARGS:
