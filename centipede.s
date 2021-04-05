@@ -990,7 +990,20 @@ move_multiple_flea:
     move 		$s0, $a0			    # $s0 = address of the flea array
     move 		$s1, $a1			    # $s1 = length of the flea array
 
-    
+    li			$s3, 0				    # $s3 = 0, the loop counter
+    move_multiple_flea_loop:
+        # Move current flea
+        lw			$a0, 0($s0)			                # $a0 = current flea to be moved
+        jal			move_flea				            # jump to move_flea and save position to $ra
+        move 		$t0, $v0			                # $t0 = next location of flea
+        
+        # Save new location
+        sw			$t0, 0($s0)			                # *$s0 = $t0
+
+        # Increment loop counter
+        addi		$s0, $s0, 4			                # $s0 = $s0 + 4
+        addi		$s3, $s3, 1			                # $s3 = $s3 + 1
+        blt			$s3, $s1, move_multiple_flea_loop	# if $s3 < $s1 then move_multiple_flea_loop
 
     lw			$s0, 16($sp)
     lw			$s1, 12($sp)
