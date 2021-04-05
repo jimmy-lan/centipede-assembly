@@ -274,6 +274,44 @@ program_exit:
 # # Levels and restarts
 ##############################################
 
+# FUN init_current_level
+# ARGS:
+# - $a0: current level
+# RETURN $v0: 0
+init_current_level:
+    addi		$sp, $sp, -20			        # $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    # Load parameters
+    move 		$s0, $a0			            # $s0 = $a0
+
+    # Currently, we do not support levels higher than 3
+    bgt			$s0, 3, init_current_level_won	# if $s0 > 3 then init_current_level_won
+    
+    
+
+    j			init_current_level_end			# jump to init_current_level_end
+    
+    init_current_level_won:
+    jal			game_won				        # jump to game_won and save position to $ra
+    
+    init_current_level_end:
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			        # $sp += 20
+
+    move 		$v0, $zero			            # $v0 = $zero
+    jr			$ra					            # jump to $ra
+
+# END FUN init_current_level
+
 # FUN await_restart
 # - After game is over or the player beats the game, this
 # - function should be invoked to listen for restart key press.
