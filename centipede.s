@@ -2317,10 +2317,10 @@ count_mushrooms:
     li			$s3, 0				# $s3 = 0
 
     count_mushrooms_loop:
-        lw			$t0, 0($s0)			# 
+        lw			$t0, 0($s0)			                    # load current mushroom
         beq			$t0, 0, count_mushrooms_loop_continue	# if $t0 == 0 then count_mushrooms_loop_continue
         
-        addi		$s3, $s3, 1			# $s3 = $s3 + 1
+        addi		$s3, $s3, 1			                    # $s3 = $s3 + 1
 
         # Increment loop counter
         count_mushrooms_loop_continue:
