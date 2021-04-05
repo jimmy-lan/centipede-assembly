@@ -14,17 +14,31 @@
 #
 # Which milestone is reached in this submission?
 # (See the project handout for descriptions of the milestones)
-# - Milestone 1/2/3/4/5 (choose the one the applies)
+# - Milestone 5
 #
 # Which approved additional features have been implemented?
 # (See the project handout for the list of additional features)
-# 1. (fill in the feature, if any)
-# 2. (fill in the feature, if any)
-# 3. (fill in the feature, if any)
-# ... (add more if necessary)
+# 1. Milestone 4a
+# 2. Milestone 4d
+# 3. Milestone 4e
+# 4. Milestone 5b: Multiple fleas, two types of fleas, varying probability
+# of generating mushrooms (will explain in-lab)
+# 5. Milestone 5d
+# 
+# Not sure if counted as "approved"
+# 6. Bug blaster "personal space": bug blaster can move up and down.
+#    Please see additional information for keyboard controls.
+# 7. Mushroom tear-off animation
+# 8. Color changes between levels
+# 9. Fancy ending screens
 #
 # Any additional information that the TA needs to know:
 # - (write here, if any)
+# 1. Please note the different display settings in my setup.
+# 2. Use "w", "s", "a", "d" to go up, down, left, right, respectively.
+#    Use the key "j" to shoot darts. To prevent mis-press of keys,
+#    the restart ("r") and quit ("q") keys are only activated when the 
+#    game is over (i.e., will only work on game over screen.)
 #
 #####################################################################
 
@@ -476,6 +490,12 @@ init_current_level:
     j			init_level_end				    # jump to init_level_end
 
     init_level_end:
+    # Reset the darts array
+    la			$a0, darts			            # 
+    lw			$a1, dartLength		            # 
+    li			$a2, -1				            # $a2 = -1
+    jal			reset_object_array				# jump to reset_object_array and save position to $ra
+
     # Reset the fleas array
     la			$a0, fleas			            # 
     lw			$a1, fleaLength		            # 
@@ -575,7 +595,9 @@ await_restart:
         j			await_restart_handle_end		        # jump to await_restart_handle_end
         
         await_restart_handle_r:
-        lw			$a0, currentLevel			            # $a0 = currentLevel
+        li			$t0, 1				                    # $t0 = 1
+        sw			$t0, currentLevel			            # 
+        move		$a0, $t0			                    # $a0 = $t0
         jal			init_current_level				        # jump to init_current_level and save position to $ra
 
         jal			clear_screen_drawings				    # jump to clear_screen_drawings and save position to $ra
