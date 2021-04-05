@@ -718,16 +718,16 @@ control_flea:
     lw			$s3, backgroundColor			    # $s3 = backgroundColor
 
     # --- Generate flea
-    lw			$t0, fleaFramesPerGen			    # 
-    div			$a0, $t0			                # $a0 / $t0
-    mfhi	    $t3					                # $t3 = $a0 mod $t0
-    bne			$t3, $zero, end_gen_flea       	    # if $t3 != $zero then end_gen_flea
+    # lw			$t0, fleaFramesPerGen			    # 
+    # div			$a0, $t0			                # $a0 / $t0
+    # mfhi	    $t3					                # $t3 = $a0 mod $t0
+    # bne			$t3, $zero, end_gen_flea       	    # if $t3 != $zero then end_gen_flea
 
-    lw			$a0, fleaMaxAmountPerGen			# 
-    lw			$a1, fleaProb			            # 
-    jal			generate_flea				        # jump to generate_flea and save position to $ra
+    # lw			$a0, fleaMaxAmountPerGen			# 
+    # lw			$a1, fleaProb			            # 
+    # jal			generate_flea				        # jump to generate_flea and save position to $ra
 
-    end_gen_flea:
+    # end_gen_flea:
     # --- END Generate flea
 
     # --- Move flea
@@ -747,6 +747,11 @@ control_flea:
     move 		$a0, $s0			    # $a0 = $s0
     move 		$a1, $s1			    # $a1 = $s1
     jal			move_multiple_flea	    # jump to move_multiple_flea and save position to $ra
+
+    lw			$t1, fleas($zero)			# 
+    move		$a0, $t1			# $a0 = $t1
+    li			$v0, 1				# syscall print int
+    syscall							# execute
     
     # Draw new flea
     move 		$a0, $s0			    # $a0 = $s0
@@ -1017,7 +1022,7 @@ generate_flea:
     # Generate random number from 0 to 99
     li			$v0, 42				                # use service 42 to generate random numbers
     li			$a0, 0				                # $a0 = 0
-    move		$a1, 100				            # $a1 = 100
+    li		    $a1, 100				            # $a1 = 100
     syscall
     move 		$t0, $a0			                # $t0 = result
     # If do not meet generation probability, terminate
@@ -1036,7 +1041,7 @@ generate_flea:
     # --- END Determine how many fleas to generate
 
     lw			$s2, fleaLength			            # $s2 = fleaLength
-    li			$t5, fleas				            # $t5 = fleas
+    lw			$t5, fleas				            # $t5 = fleas
     li			$t6, 0				                # $t6 = 0, the loop counter
     generate_flea_loop:
         lw			$t0, 0($t5)			                # current flea element
@@ -1191,6 +1196,7 @@ move_multiple_flea:
     jr			$ra					    # jump to $ra
 
 # END FUN move_multiple_flea
+
 # FUN move_flea
 # ARGS:
 # $a0: current location of flea (object grid)
@@ -1207,12 +1213,13 @@ move_flea:
     move 		$s0, $a0			                # $s0 = current flea location (object grid)
 
     # Skip empty flea
-    beq			$s0, -1, move_flea_end	# if $s0 == -1 then move_flea_end
+    li			$v0, -1				                # default empty location
+    beq			$s0, -1, move_flea_end	            # if $s0 == -1 then move_flea_end
     
 
     # Move the flea one row downward
     lw			$t0, screenPixelUnits		        # $t0 = screenPixelUnits
-    addi		$v0, $s0, $t0			            # $v0 = $s0 + $t0
+    add 		$v0, $s0, $t0			            # $v0 = $s0 + $t0
     
     # Check if flea exits the screen
     mult	    $t0, $t0			                # $t0 * $t0 = Hi and Lo registers
