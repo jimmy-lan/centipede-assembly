@@ -713,6 +713,15 @@ control_flea:
     lw			$s3, backgroundColor			# 
 
     # TODO handle flea generation
+    lw			$t0, fleaGenFrames			# 
+    
+
+    # --- Move flea
+    # Check if flea should move
+    lw			$t0, fleaFramesPerMove     		    # $t0 = fleaFramesPerMove
+    div			$a0, $t0			                # $a0 / $t0
+    mfhi	    $t3					                # $t3 = $a0 mod $t0
+    bne			$t3, $zero, end_move_flea       	# if $t3 != $zero then end_move_flea
 
     # Clear old fleas
     move 		$a0, $s0			    # $a0 = $s0
@@ -731,6 +740,9 @@ control_flea:
     move 		$a2, $s2			    # $a2 = $s2
     jal			draw_multiple_flea	    # jump to draw_multiple_flea and save position to $ra
 
+    end_move_flea:
+    # --- END Move flea
+
     lw			$s0, 16($sp)
     lw			$s1, 12($sp)
     lw			$s2, 8($sp)
@@ -744,7 +756,7 @@ control_flea:
 # END FUN control_flea
 
 ##############################################
-# # Object Movement Logic
+# # Logics
 ##############################################
 # FUN move_blaster_by_keystroke
 # - "a": move left
@@ -968,6 +980,34 @@ move_darts:
     jr			$ra					        # jump to $ra
 
 # END FUN move_darts
+
+# FUN generate_flea
+# - Generate between 0 to $a0 fleas and add to the fleas array.
+# - Only generates more than 0 flea with probability $a1 / 100.
+# ARGS:
+# $a0: maximum amount to generate
+# $a1: probability of generation (0 - 100)
+generate_flea:
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    
+
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+
+    move 		$v0, $zero			    # $v0 = $zero
+    jr			$ra					    # jump to $ra
+
+# END FUN generate_flea
 
 # FUN generate_mushrooms
 # Generate and populate the "mushrooms" array based on "mushroomLength"
