@@ -691,8 +691,8 @@ control_darts:
 # # Object Movement Logic
 ##############################################
 # FUN move_blaster_by_keystroke
-# - "j": move left
-# - "k": move right
+# - "a": move left
+# - "d": move right
 # - "w": move up
 # - "s": move down
 # ARGS:
@@ -723,8 +723,8 @@ move_blaster_by_keystroke:
 
     # Check type of key being pressed
     lw			$t9, 0xffff0004			    # load key identifier
-    beq			$t9, 0x6A, mbbk_handle_j	# if $t9 == 0x6A then mbbk_handle_j
-    beq			$t9, 0x6B, mbbk_handle_k	# if $t9 == 0x6B then mbbk_handle_k
+    beq			$t9, 0x61, mbbk_handle_a	# if $t9 == 0x6A then mbbk_handle_a
+    beq			$t9, 0x64, mbbk_handle_d	# if $t9 == 0x6B then mbbk_handle_d
     beq			$t9, 0x77, mbbk_handle_w	# if $t9 == 0x57 then mbbk_handle_w
     beq			$t9, 0x73, mbbk_handle_s	# if $t9 == 0x53 then mbbk_handle_s
 
@@ -734,18 +734,18 @@ move_blaster_by_keystroke:
     j			mbbk_end			        # jump to mbbk_end
 
     # --- Handle movement keys
-    mbbk_handle_j:
+    mbbk_handle_a:
         # Prevent bug blaster from exiting the left border
         beq			$s3, $zero, mbbk_default_return	# if $s3 == $zero then mbbk_default_return
         subi		$v0, $s0, 1			            # $v0 = $s0 - 1
-        mbbk_handle_j_end:
+        mbbk_handle_a_end:
         j			mbbk_key_handle_end		        # jump to mbbk_key_handle_end
-    mbbk_handle_k:
+    mbbk_handle_d:
         # Prevent bug blaster from exiting the right border
         subi		$t0, $s1, 1			            # $t0 = $s1 - 1
         beq			$s3, $t0, mbbk_default_return	# if $s3 == $t0 then mbbk_default_return
         addi		$v0, $s0, 1			            # $v0 = $s0 + 1
-        mbbk_handle_k_end:
+        mbbk_handle_d_end:
         j			mbbk_key_handle_end		        # jump to mbbk_key_handle_end
     mbbk_handle_w:
         # Prevent bug blaster from leaving personal space
