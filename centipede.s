@@ -76,7 +76,7 @@
     fleas: .word -1:5
     fleaLength: .word 5
     fleaCurrentLives: .word 0:5                 # Current health of the fleas
-    fleaLives: .word 2                          # Maximum lives per flea
+    fleaMaxLives: .word 2                          # Maximum lives per flea
     fleaFramesPerMove: .word 2
     fleaFramesPerGen: .word 30                  # Number of frames to generate flea
     fleaGenProb: .word 15                       # Probability to generate flea per generation cycle
@@ -1110,10 +1110,10 @@ generate_flea:
     addi		$s2, $t0, 1			                # $s2 = random number from 1 to $s0
     # --- END Determine how many fleas to generate
 
-    la			$s3, fleas				            # $s3 = address of fleas
+    li			$s3, 0				                # $s3 = 0, the array accessor
     li			$t6, 0				                # $t6 = 0, the loop counter
     generate_flea_loop:
-        lw			$t0, 0($s3)			                # current flea element
+        lw			$t0, fleas($s3)			            # current flea element
         bne			$t0, -1, generate_flea_skip	        # if $t0 != -1 then generate_flea_skip
         
         # Generate flea and save to 0($s3)
@@ -1130,7 +1130,9 @@ generate_flea:
         # --- END Generate random number from 0 to (screenPixelUnits - 1)
 
         # Save back location
-        sw			$t0, 0($s3)			                # 
+        sw			$t0, fleas($s3)			            # 
+        lw			$t2, fleaMaxLives			            # load maximum number of lives that a flea can have
+        sw			$t2, fleaCurrentLives($s3)			# 
         
         subi		$s2, $s2, 1			                # $s3 = $s3 - 1
         beq			$s2, 0, end_generate_flea	        # if $s3 == 0 then end_generate_flea
