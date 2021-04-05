@@ -797,6 +797,7 @@ move_blaster_by_keystroke:
 # FUN shoot_dart_by_keystroke
 # - Modify the darts array by adding a dart with appropriate position (in display grid) to it.
 # - If the maximum allowed number of darts is achieved, then do nothing.
+# - "j" - shoot out darts
 # ARGS:
 # $a0: address of the darts array
 # $a1: length of darts array
@@ -826,15 +827,15 @@ shoot_dart_by_keystroke:
     
     # Check type of key being pressed
     lw			$t9, 0xffff0004			            # load key identifier
-    beq			$t9, 0x78, sdbk_handle_x	        # if $t9 == 0x78 then sdbk_handle_x
+    beq			$t9, 0x6A, sbdk_handle_j	        # if $t9 == 0x78 then sbdk_handle_j
     
     j			sdbk_end				            # jump to sdbk_end
 
-    sdbk_handle_x:
+    sbdk_handle_j:
         li 		    $t0, 0			                    # $t0 = 0, the loop counter
-        sdbk_handle_x_loop:
+        sbdk_handle_j_loop:
         lw			$t1, 0($s0)			                # get current element in the darts array
-        bne			$t1, -1, sdbk_handle_x_loop_next	# if not empty, go to the next element
+        bne			$t1, -1, sbdk_handle_j_loop_next	# if not empty, go to the next element
 
         # Position to place dart is one row above the bug blaster
         sub 		$t2, $s2, $s3			            # $t2 = $s2 - $s3
@@ -842,10 +843,10 @@ shoot_dart_by_keystroke:
         j			sdbk_end				            # jump to sdbk_end
         
         # Decrement loop counter and go to the next element
-        sdbk_handle_x_loop_next:
+        sbdk_handle_j_loop_next:
         addi		$t0, $t0, 1			                # decrement loop counter by 1
         addi		$s0, $s0, 4			                # $s0 = $s0 + 4
-        bne			$t0, $s1, sdbk_handle_x_loop	    # if $t0 != $s1 (length of the darts array) then sdbk_handle_x_loop
+        bne			$t0, $s1, sbdk_handle_j_loop	    # if $t0 != $s1 (length of the darts array) then sbdk_handle_j_loop
 
     sdbk_end:
     lw			$s0, 16($sp)
