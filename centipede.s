@@ -40,12 +40,13 @@
     # --- Colors
     backgroundColor: .word 0x00000000
     centipedeColor: .word 0x00f7a634
-    centipedeHeadColor: .word 0x00e09b3a
+    centipedeHeadColor: .word 0x00e35819
     mushroomFullLivesColor: .word 0x004394f0
     mushroomColor: .word 0x0076c0d6
     blasterColor: .word 0x00ffffff
     dartColor: .word 0x00ffffff
-    fleaColor: .word 0x001efa9b
+    fleaColor: .word 0x00ee1df5         # Color of a flea that does not leave mushrooms
+    fleaLeaveMushroomColor: .word 0x001efa9b    # Color of a flea that leaves mushrooms
 
     gameOverTextColor: .word 0x00fc037f
     gameWonTextColor: .word 0x0010e858
@@ -76,13 +77,12 @@
     fleaLength: .word 5
     fleaFramesPerMove: .word 2
     fleaFramesPerGen: .word 30                  # Number of frames to generate flea
-    fleaGenProb: .word 20                       # Probability to generate flea per generation cycle
+    fleaGenProb: .word 15                       # Probability to generate flea per generation cycle
     fleaMaxAmountPerGen: .word 3                # Maximum number of fleas to generate simutaneously
     fleaMushroomProbUpper: .word 5              # Probability of fleas leaving mushroom on the upper half of screen
     fleaMushroomProbLower: .word 30             # Probability of fleas leaving mushroom on the lower half of screen
     fleaMushroomProbSplitLocation: .word 210    # Location at which the flea changes probability of generating mushroom
-    fleaLeaveMushroomThreshold: .word 80        # Leave mushroom if number of mushrooms in area is less than this number
-
+    fleaLeaveMushroomThreshold: .word 35        # Leave mushroom if number of mushrooms in area is less than this number
     # --- END Objects
 
     # Personal Space for Bug Blaster
@@ -802,7 +802,7 @@ control_flea:
 
     lw			$t1, fleaLeaveMushroomThreshold
     blt			$t0, $t1, control_flea_leave_mushrooms	# if $t0 < $t1 then control_flea_leave_mushrooms
-    
+
     j			control_flea_leave_mushrooms_end		# jump to control_flea_leave_mushrooms_end
 
     # Leave mushrooms with defined probability
@@ -811,6 +811,9 @@ control_flea:
     move 		$a1, $s1			                    # $a1 = $s1
     jal			leave_mushrooms_with_fleas			    # jump to leave_mushrooms_with_flea and save position to $ra
 
+    # Update flea color to the mushroom-leaving color
+    lw			$s2, fleaLeaveMushroomColor			# 
+    
     control_flea_leave_mushrooms_end:
     
     # Calculate next position
@@ -2325,7 +2328,7 @@ count_mushrooms:
     li			$t0, 4				# $t0 = 4
     mult	    $s1, $t0			# $s1 * $t0 = Hi and Lo registers
     mflo	    $t1					# copy Lo to $t1
-    addi		$s0, $s0, $t1		# $s0 = $s0 + $t1
+    add 		$s0, $s0, $t1		# $s0 = $s0 + $t1
 
     # Mushroom counter
     li			$s3, 0				# $s3 = 0
@@ -2342,6 +2345,8 @@ count_mushrooms:
         addi		$s1, $s1, 1			                    # $s1 = $s1 + 1
         blt			$s1, $s2, count_mushrooms_loop	        # if $s1 < $s2 then count_mushrooms_loop
 
+    move 		$v0, $s3			    # $v0 = $s3
+
     lw			$s0, 16($sp)
     lw			$s1, 12($sp)
     lw			$s2, 8($sp)
@@ -2349,7 +2354,6 @@ count_mushrooms:
     lw			$ra, 0($sp)
     addi		$sp, $sp, 20			# $sp += 20
 
-    move 		$v0, $s3			    # $v0 = $zero
     jr			$ra					    # jump to $ra
 
 # END FUN count_mushrooms
