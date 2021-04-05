@@ -979,24 +979,37 @@ generate_mushrooms:
 # $a0: current location of flea (object grid)
 # RETURN $v0: next location of flea (object grid)
 move_flea:
-    addi		$sp, $sp, -20			# $sp -= 20
+    addi		$sp, $sp, -20			            # $sp -= 20
     sw			$s0, 16($sp)
     sw			$s1, 12($sp)
     sw			$s2, 8($sp)
     sw			$s3, 4($sp)
     sw			$ra, 0($sp)
 
-    
+    # Save parameters
+    move 		$s0, $a0			                # $s0 = current flea location (object grid)
 
+    # Move the flea one row downward
+    lw			$t0, screenPixelUnits		        # $t0 = screenPixelUnits
+    addi		$v0, $s0, $t0			            # $v0 = $s0 + $t0
+    
+    # Check if flea exits the screen
+    mult	    $t0, $t0			                # $t0 * $t0 = Hi and Lo registers
+    mflo	    $t1					                # copy Lo to $t1
+    blt			$v0, $t0, move_flea_end         	# if $v0 < $t0 then move_flea_end
+    
+    # Flea is outside of the screen
+    li			$v0, -1				                # $v0 = -1, remove this flea
+
+    move_flea_end:
     lw			$s0, 16($sp)
     lw			$s1, 12($sp)
     lw			$s2, 8($sp)
     lw			$s3, 4($sp)
     lw			$ra, 0($sp)
-    addi		$sp, $sp, 20			# $sp += 20
+    addi		$sp, $sp, 20			            # $sp += 20
 
-    move 		$v0, $zero			# $v0 = $zero
-    jr			$ra					# jump to $ra
+    jr			$ra					                # jump to $ra
 
 # END FUN move_flea
 
