@@ -500,6 +500,38 @@ init_current_level:
 
 # END FUN init_current_level
 
+# FUN advance_level
+# - Advance to the next level.
+# ARGS:
+advance_level:
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    lw			$t0, currentLevel			            # $t0 = currentLevel
+    addi		$t0, $t0, 1			                    # $t0 = $t0 + 1
+    sw			$t0, currentLevel			            # save new level
+    
+    move 		$a0, $t0			                    # $a0 = $t0
+    jal			init_current_level				        # jump to init_current_level and save position to $ra
+
+    jal			clear_screen_drawings				    # jump to clear_screen_drawings and save position to $ra
+
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+
+    move 		$v0, $zero			# $v0 = $zero
+    jr			$ra					# jump to $ra
+
+# END FUN advance_level
+
 # FUN await_restart
 # - After game is over or the player beats the game, this
 # - function should be invoked to listen for restart key press.
