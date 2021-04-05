@@ -2598,6 +2598,52 @@ count_mushrooms:
 
 # END FUN count_mushrooms
 
+# FUN copy_array
+# - Copy values from array 1 to array 2
+# ARGS:
+# $a0: address of array 1
+# $a1: address of array 2
+# $a2: length of array 1 and array 2
+copy_array:
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    # Load parameters
+    move 		$s0, $a0			# $s0 = $a0
+    move 		$s1, $a1			# $s1 = $a1
+    move 		$s2, $a2			# $s2 = $a2
+
+    # Set up counters
+    li			$t6, 0				# $t6 = 0, the loop counter
+    li			$s3, 0				# $s3 = 0, the array accessor
+    copy_array_loop:
+        add			$t0, $s3, $s0		# $t0 = $s3 + $s0 - accessor for array 1
+        add			$t1, $s3, $s1		# $t1 = $s3 + $s1 - accessor for array 2
+        
+        lw			$t2, 0($t0)			# load from array 1
+        sw			$t2, 0($t1)			# save to array 2
+
+        # Increment loop counters
+        addi		$t6, $t6, 1			            # $t6 = $t6 + 1
+        addi		$s3, $s3, 4			            # $s3 = $s3 + 4
+        blt			$t6, $s2, copy_array_loop	    # if $t6 < $s2 then copy_array_loop
+
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+
+    move 		$v0, $zero			# $v0 = $zero
+    jr			$ra					# jump to $ra
+
+# END FUN copy_array
+
 # FUN remove_mushrooms
 # ARGS:
 # $a0: address of location array indicating where to remove mushrooms (object grid)
