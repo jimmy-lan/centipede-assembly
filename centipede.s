@@ -179,6 +179,55 @@ program_exit:
 ############################################################################################
 
 ##############################################
+# # Levels and restarts
+##############################################
+
+# FUN await_restart
+# - After game is over or the player beats the game, this
+# - function should be invoked to listen for restart key press.
+# - "r": restart the game
+# - "q": quit game
+# ARGS:
+await_restart:
+    addi		$sp, $sp, -20			                    # $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    await_restart_loop:
+        # Load keypress indicator
+        lw          $s6, 0xffff0000                         # load key-press indicator
+
+        beq			$s6, 0x71, await_restart_handle_q	    # if $s6 == 0x71 then await_restart_handle_q
+        beq			$s6, 0x72, await_restart_handle_r	# if $s6 == 0x72 then await_restart_handle_r
+        
+        j			await_restart_handle_end		        # jump to await_restart_handle_end
+        
+        await_restart_handle_r:
+        # TODO load level
+
+        await_restart_handle_q:
+        j			program_exit				# jump to program_exit
+        
+        await_restart_handle_end:
+
+        j			await_restart_loop				        # jump to await_restart_loop
+        
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			                    # $sp += 20
+
+    move 		$v0, $zero			                        # $v0 = $zero
+    jr			$ra					                        # jump to $ra
+
+# END FUN await_restart
+
+##############################################
 # # Game Rules
 ##############################################
 
@@ -329,32 +378,6 @@ game_over:
     jr			$ra					# jump to $ra
 
 # END FUN game_over
-
-# FUN await_restart
-# - After game is over or the player beats the game, this
-# - function should be invoked to listen for restart key press.
-# ARGS:
-await_restart:
-    addi		$sp, $sp, -20			# $sp -= 20
-    sw			$s0, 16($sp)
-    sw			$s1, 12($sp)
-    sw			$s2, 8($sp)
-    sw			$s3, 4($sp)
-    sw			$ra, 0($sp)
-
-    
-
-    lw			$s0, 16($sp)
-    lw			$s1, 12($sp)
-    lw			$s2, 8($sp)
-    lw			$s3, 4($sp)
-    lw			$ra, 0($sp)
-    addi		$sp, $sp, 20			# $sp += 20
-
-    move 		$v0, $zero			# $v0 = $zero
-    jr			$ra					# jump to $ra
-
-# END FUN await_restart
 
 ##############################################
 # # Collision Detection
