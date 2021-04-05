@@ -75,6 +75,8 @@
     # Flea
     fleas: .word -1:5
     fleaLength: .word 5
+    fleaCurrentLives: .word 0:5                 # Current health of the fleas
+    fleaLives: .word 2                          # Maximum lives per flea
     fleaFramesPerMove: .word 2
     fleaFramesPerGen: .word 30                  # Number of frames to generate flea
     fleaGenProb: .word 15                       # Probability to generate flea per generation cycle
