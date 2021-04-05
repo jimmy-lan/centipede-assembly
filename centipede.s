@@ -731,7 +731,7 @@ move_blaster_by_keystroke:
     # Produce default return
     mbbk_default_return:
     move 		$v0, $s0			        # $v0 = current blaster location, default return
-    j			mbbk_key_handle_end			# jump to mbbk_key_handle_end
+    j			mbbk_end			        # jump to mbbk_end
 
     # --- Handle movement keys
     mbbk_handle_j:
@@ -751,24 +751,35 @@ move_blaster_by_keystroke:
         # Prevent bug blaster from leaving personal space
         lw			$t0, personalSpaceStart			# $t0 = personalSpaceStart
         sub		    $v0, $s0, $s1			        # $v0 = $s0 - $s1
-        bge			$v0, $t0, mbbk_handle_w_end 	# if currently in personal space
+        bge			$v0, $t0, mbbk_key_handle_end 	# if currently in personal space
 
-        mbbk_left_personal_space_w:
-        move 		$v0, $s0			            # revert location
-
-        mbbk_handle_w_end:
-        j			mbbk_key_handle_end		        # jump to mbbk_key_handle_end
+        j			mbbk_default_return				# jump to mbbk_default_return
+        
     mbbk_handle_s:
         lw			$t0, personalSpaceEnd			# $t0 = personalSpaceEnd
         add			$v0, $s0, $s1		            # $v0 = $s0 + $s1
-        bgt			$t0, $v0, mbbk_handle_s_end 	# if currently in personal space
+        bgt			$t0, $v0, mbbk_key_handle_end 	# if currently in personal space
 
-        mbbk_left_personal_space_s:
-        move 		$v0, $s0			            # revert location
-
-        mbbk_handle_s_end:
-        j			mbbk_key_handle_end		        # jump to mbbk_key_handle_end
+        j			mbbk_default_return				# jump to mbbk_default_return
+        
     mbbk_key_handle_end:
+        # Check if blaster is in mushroom area and hits a mushroom
+        lw			$t0, mushroomLength             # $t0 = mushroomLength
+        bge			$v0, $t0, mbbk_hit_mushroom_end	# if $v0 (updated blaster location) >= $t0 then mbbk_hit_mushroom_end
+    
+    mbbk_hit_mushroom:
+        # Bug blaster is in mushroom area
+        li			$t9, 4				            # $t9 = 4
+        mult	    $v0, $t9			            # $v0 * $t9 = Hi and Lo registers
+        mflo	    $t9					            # copy Lo to $t9
+        lw			$t1, mushrooms($t9)			    # check updated location for mushroom
+        beq			$t1, 0, mbbk_hit_mushroom_end	# end if no mushroom is present
+        
+        # If mushroom is present in the new location, then prevent movement
+        j			mbbk_default_return				# jump to mbbk_default_return
+
+    mbbk_hit_mushroom_end:
+    # --- END Check if blaster is in mushroom area and hits a mushroom
     # --- END Handle movement keys
 
     mbbk_end:
