@@ -75,12 +75,14 @@
     fleas: .word -1:5
     fleaLength: .word 5
     fleaFramesPerMove: .word 2
-    fleaFramesPerGen: .word 30            # Number of frames to generate flea
-    fleaGenProb: .word 20                 # Probability to generate flea per generation cycle
-    fleaMaxAmountPerGen: .word 3         # Maximum number of fleas to generate simutaneously
-    fleaMushroomProbUpper: .word 5     # Probability of fleas leaving mushroom on the upper half of screen
-    fleaMushroomProbLower: .word 30      # Probability of fleas leaving mushroom on the lower half of screen
-    fleaMushroomProbSplitLocation: .word 210        # Location at which the flea changes probability of generating mushroom
+    fleaFramesPerGen: .word 30                  # Number of frames to generate flea
+    fleaGenProb: .word 20                       # Probability to generate flea per generation cycle
+    fleaMaxAmountPerGen: .word 3                # Maximum number of fleas to generate simutaneously
+    fleaMushroomProbUpper: .word 5              # Probability of fleas leaving mushroom on the upper half of screen
+    fleaMushroomProbLower: .word 30             # Probability of fleas leaving mushroom on the lower half of screen
+    fleaMushroomProbSplitLocation: .word 210    # Location at which the flea changes probability of generating mushroom
+    fleaLeaveMushroomThreshold: .word 80        # Leave mushroom if number of mushrooms in area is less than this number
+
     # --- END Objects
 
     # Personal Space for Bug Blaster
@@ -753,62 +755,74 @@ control_darts:
 # ARGS:
 # $a0: current frame number
 control_flea:
-    addi		$sp, $sp, -20			# $sp -= 20
+    addi		$sp, $sp, -20			                # $sp -= 20
     sw			$s0, 16($sp)
     sw			$s1, 12($sp)
     sw			$s2, 8($sp)
     sw			$s3, 4($sp)
     sw			$ra, 0($sp)
 
-    la			$s0, fleas			                # $s0 = address of fleas
-    lw			$s1, fleaLength			            # $s1 = fleaLength
-    lw			$s2, fleaColor			            # $s2 = fleaColor
-    lw			$s3, backgroundColor			    # $s3 = backgroundColor
+    la			$s0, fleas			                    # $s0 = address of fleas
+    lw			$s1, fleaLength			                # $s1 = fleaLength
+    lw			$s2, fleaColor			                # $s2 = fleaColor
+    lw			$s3, backgroundColor			        # $s3 = backgroundColor
 
     # --- Generate flea
-    lw			$t0, fleaFramesPerGen			    # 
-    div			$a0, $t0			                # $a0 / $t0
-    mfhi	    $t3					                # $t3 = $a0 mod $t0
-    bne			$t3, $zero, end_gen_flea       	    # if $t3 != $zero then end_gen_flea
+    lw			$t0, fleaFramesPerGen			        # 
+    div			$a0, $t0			                    # $a0 / $t0
+    mfhi	    $t3					                    # $t3 = $a0 mod $t0
+    bne			$t3, $zero, end_gen_flea       	        # if $t3 != $zero then end_gen_flea
 
-    lw			$a0, fleaMaxAmountPerGen			# 
-    lw			$a1, fleaGenProb			        # 
-    jal			generate_flea				        # jump to generate_flea and save position to $ra
+    lw			$a0, fleaMaxAmountPerGen			    # 
+    lw			$a1, fleaGenProb			            # 
+    jal			generate_flea				            # jump to generate_flea and save position to $ra
 
     end_gen_flea:
     # --- END Generate flea
 
     # --- Move flea and leave mushroom
     # Check if flea should move
-    lw			$t0, fleaFramesPerMove     		    # $t0 = fleaFramesPerMove
-    div			$a0, $t0			                # $a0 / $t0
-    mfhi	    $t3					                # $t3 = $a0 mod $t0
-    bne			$t3, $zero, end_move_flea       	# if $t3 != $zero then end_move_flea
+    lw			$t0, fleaFramesPerMove     		        # $t0 = fleaFramesPerMove
+    div			$a0, $t0			                    # $a0 / $t0
+    mfhi	    $t3					                    # $t3 = $a0 mod $t0
+    bne			$t3, $zero, end_move_flea       	    # if $t3 != $zero then end_move_flea
 
     # Clear old fleas
-    move 		$a0, $s0			                # $a0 = $s0
-    move 		$a1, $s1			                # $a1 = $s1
-    move 		$a2, $s3			                # $a2 = $s3
-    jal			draw_multiple_flea	                # jump to draw_multiple_flea and save position to $ra
+    move 		$a0, $s0			                    # $a0 = $s0
+    move 		$a1, $s1			                    # $a1 = $s1
+    move 		$a2, $s3			                    # $a2 = $s3
+    jal			draw_multiple_flea	                    # jump to draw_multiple_flea and save position to $ra
 	
+    # Check if it is necessary to leave mushrooms
+    la			$a0, mushrooms
+    lw			$a1, fleaMushroomProbSplitLocation
+    lw			$a2, mushroomLength
+    jal			count_mushrooms				            # jump to count_mushrooms and save position to $ra
+    move 		$t0, $v0			                    # $t0 = number of mushrooms in area
+
+    lw			$t1, fleaLeaveMushroomThreshold
+    blt			$t0, $t1, control_flea_leave_mushrooms	# if $t0 < $t1 then control_flea_leave_mushrooms
+    
+    j			control_flea_leave_mushrooms_end		# jump to control_flea_leave_mushrooms_end
+
     # Leave mushrooms with defined probability
     control_flea_leave_mushrooms:
-    move 		$a0, $s0			                # $a0 = $s0
-    move 		$a1, $s1			                # $a1 = $s1
-    jal			leave_mushrooms_with_fleas			# jump to leave_mushrooms_with_flea and save position to $ra
+    move 		$a0, $s0			                    # $a0 = $s0
+    move 		$a1, $s1			                    # $a1 = $s1
+    jal			leave_mushrooms_with_fleas			    # jump to leave_mushrooms_with_flea and save position to $ra
 
     control_flea_leave_mushrooms_end:
     
     # Calculate next position
-    move 		$a0, $s0			                # $a0 = $s0
-    move 		$a1, $s1			                # $a1 = $s1
-    jal			move_multiple_flea	                # jump to move_multiple_flea and save position to $ra
+    move 		$a0, $s0			                    # $a0 = $s0
+    move 		$a1, $s1			                    # $a1 = $s1
+    jal			move_multiple_flea	                    # jump to move_multiple_flea and save position to $ra
     
     # Draw new flea
-    move 		$a0, $s0			                # $a0 = $s0
-    move 		$a1, $s1			                # $a1 = $s1
-    move 		$a2, $s2			                # $a2 = $s2
-    jal			draw_multiple_flea	                # jump to draw_multiple_flea and save position to $ra
+    move 		$a0, $s0			                    # $a0 = $s0
+    move 		$a1, $s1			                    # $a1 = $s1
+    move 		$a2, $s2			                    # $a2 = $s2
+    jal			draw_multiple_flea	                    # jump to draw_multiple_flea and save position to $ra
 
     end_move_flea:
     # --- END Move flea and leave mushroom
@@ -818,10 +832,10 @@ control_flea:
     lw			$s2, 8($sp)
     lw			$s3, 4($sp)
     lw			$ra, 0($sp)
-    addi		$sp, $sp, 20			            # $sp += 20
+    addi		$sp, $sp, 20			                # $sp += 20
 
-    move 		$v0, $zero			                # $v0 = $zero
-    jr			$ra					                # jump to $ra
+    move 		$v0, $zero			                    # $v0 = $zero
+    jr			$ra					                    # jump to $ra
 
 # END FUN control_flea
 
