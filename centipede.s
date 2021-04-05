@@ -71,8 +71,8 @@
 
     mushroomFullLivesColor1: .word 0x004394f0
     mushroomColor1: .word 0x0076c0d6
-    mushroomFullLivesColor2: .word 0x004394f0
-    mushroomColor2: .word 0x009f41ab
+    mushroomFullLivesColor2: .word 0x009f41ab
+    mushroomColor2: .word 0x00d070e6
     mushroomFullLivesColor3: .word 0x004151cc
     mushroomColor3: .word 0x006596e0
 
@@ -88,7 +88,7 @@
     # Centipede
     centipedeLocations: .word 0:25       # Placeholder
     centipedeLocationEmpty: .word -1     # Location value to indicate a "dead" centipede segment
-    centipedeDirections: .word 1:25      # 1: goes right, -1: goes left, placeholder
+    centipedeDirections: .word 0:25      # 1: goes right, -1: goes left, placeholder
     centipedeLength: .word -1            # Placeholder
     centipedeFramesPerMove: .word 0      # Number of frames per movement of the centipede, placeholder
 
@@ -135,7 +135,7 @@
     # Flea
     fleas: .word -1:10
     fleaLength: .word 10
-    fleaCurrentLives: .word 0:5                 # Current health of the fleas
+    fleaCurrentLives: .word 0:10                 # Current health of the fleas
     fleaMaxLives: .word 2                       # Maximum lives per flea
     fleaFramesPerMove: .word 2
     fleaFramesPerGen: .word 30                  # Number of frames to generate flea
@@ -154,6 +154,10 @@
     fleaMaxLives1: .word 1
     fleaMaxLives2: .word 2
     fleaMaxLives3: .word 2
+
+    fleaFramesPerMove1: .word 3
+    fleaFramesPerMove2: .word 2
+    fleaFramesPerMove3: .word 1
 
     fleaMaxAmountPerGen1: .word 3
     fleaMaxAmountPerGen2: .word 5
@@ -341,6 +345,8 @@ init_current_level:
     sw			$t0, fleaLength
     lw			$t0, fleaMaxLives1
     sw			$t0, fleaMaxLives
+    lw			$t0, fleaFramesPerMove1
+    sw			$t0, fleaFramesPerMove
     lw			$t0, fleaMaxAmountPerGen1
     sw			$t0, fleaMaxAmountPerGen
     lw			$t0, fleaMushroomProbUpper1
@@ -372,12 +378,12 @@ init_current_level:
     # --- Load objects
     # Centipede
     la			$a0, centipedeLocations2
-    la			$a2, centipedeLocations
+    la			$a1, centipedeLocations
     lw			$a2, centipedeLength2
     jal			copy_array				# jump to copy_array and save position to $ra
     
     la			$a0, centipedeDirections2
-    la			$a2, centipedeDirections
+    la			$a1, centipedeDirections
     lw			$a2, centipedeLength2
     jal			copy_array				# jump to copy_array and save position to $ra
     
@@ -397,6 +403,8 @@ init_current_level:
     sw			$t0, fleaLength
     lw			$t0, fleaMaxLives2
     sw			$t0, fleaMaxLives
+    lw			$t0, fleaFramesPerMove1
+    sw			$t0, fleaFramesPerMove
     lw			$t0, fleaMaxAmountPerGen2
     sw			$t0, fleaMaxAmountPerGen
     lw			$t0, fleaMushroomProbUpper2
@@ -428,12 +436,12 @@ init_current_level:
     # --- Load objects
     # Centipede
     la			$a0, centipedeLocations3
-    la			$a3, centipedeLocations
+    la			$a1, centipedeLocations
     lw			$a2, centipedeLength3
     jal			copy_array				# jump to copy_array and save position to $ra
     
     la			$a0, centipedeDirections3
-    la			$a3, centipedeDirections
+    la			$a1, centipedeDirections
     lw			$a2, centipedeLength3
     jal			copy_array				# jump to copy_array and save position to $ra
     
@@ -453,6 +461,8 @@ init_current_level:
     sw			$t0, fleaLength
     lw			$t0, fleaMaxLives3
     sw			$t0, fleaMaxLives
+    lw			$t0, fleaFramesPerMove1
+    sw			$t0, fleaFramesPerMove
     lw			$t0, fleaMaxAmountPerGen3
     sw			$t0, fleaMaxAmountPerGen
     lw			$t0, fleaMushroomProbUpper3
@@ -662,7 +672,7 @@ detect_centipede_clear_off:
         blt			$s2, $s1, dcco_loop	        # if $s2 < $s1 then dcco_loop
 
     # Respond to clear off event
-    jal			game_won				        # jump to game_won and save position to $ra
+    jal			advance_level	        # jump to advance_level and save position to $ra
     
     dcco_end:
     lw			$s0, 16($sp)
