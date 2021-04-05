@@ -2089,13 +2089,13 @@ remove_fleas:
     sw			$ra, 0($sp)
 
     # Load parameters
-    move 		$a0, $s0			                # $a0 = address of the flea array
-    move 		$a1, $s1			                # $a1 = length of the flea array
+    move 		$s0, $a0			                # $s0 = address of the flea array
+    move 		$s1, $a1			                # $s1 = length of the flea array
 
     li			$s3, 0				                # $s3 = 0, the loop counter
     remove_fleas_loop:
         li			$t0, -1				            # $t0 = -1
-        lw			$t0, 0($s0)			# 
+        sw			$t0, 0($s0)			            # 
 
         # Increment loop counter
         addi		$s0, $s0, 4			            # $s0 = $s0 + 4
