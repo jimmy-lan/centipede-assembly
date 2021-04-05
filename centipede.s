@@ -2610,7 +2610,23 @@ remove_mushrooms:
     sw			$s3, 4($sp)
     sw			$ra, 0($sp)
 
-    
+    move 		$s0, $a0			# $s0 = $a0
+    move 		$s1, $a1			# $s1 = $a1
+
+    li			$s3, 0				# $s3 = 0
+    remove_mushrooms_loop:
+        lw			$t0, 0($s0)			# 
+        li			$t1, 4				# $t1 = 4
+        mult	    $t0, $t1			# $t0 * $t1 = Hi and Lo registers
+        mflo	    $t2					# copy Lo to $t2
+        li			$t1, 0				# $t1 = 0
+        sw			$t1, mushrooms($t2)	# 
+
+        # Increment loop counters
+        addi		$s0, $s0, 4			# $s0 = $s0 + 4
+        addi		$s3, $s3, 1			# $s3 = $s3 + 1
+        blt			$s3, $s1, remove_mushrooms_loop	# if $s3 < $s1 then remove_mushrooms_loop
+        
 
     lw			$s0, 16($sp)
     lw			$s1, 12($sp)
