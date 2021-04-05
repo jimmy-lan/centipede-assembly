@@ -148,6 +148,11 @@ game_loop_main:
     move 		$a0, $s0			            # $a0 = $s0
     jal			control_darts				    # jump to control_darts and save position to $ra
 
+    # Fleas
+    move 		$a0, $s0			            # $a0 = $s0
+    jal			control_flea				    # jump to control_flea and save position to $ra
+    
+
     # Game rule
     jal			enforce_game_rules				# jump to enforce_game_rules and save position to $ra
     
