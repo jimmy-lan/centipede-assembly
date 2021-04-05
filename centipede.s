@@ -78,8 +78,8 @@
     fleaFramesPerGen: .word 30            # Number of frames to generate flea
     fleaGenProb: .word 20                 # Probability to generate flea per generation cycle
     fleaMaxAmountPerGen: .word 3         # Maximum number of fleas to generate simutaneously
-    fleaMushroomProbUpper: .word 10     # Probability of fleas leaving mushroom on the upper half of screen
-    fleaMushroomProbLower: .word 30      # Probability of fleas leaving mushroom on the lower half of screen
+    fleaMushroomProbUpper: .word 5     # Probability of fleas leaving mushroom on the upper half of screen
+    fleaMushroomProbLower: .word 15      # Probability of fleas leaving mushroom on the lower half of screen
     fleaMushroomProbSplitLocation: .word 210        # Location at which the flea changes probability of generating mushroom
     # --- END Objects
 
@@ -727,7 +727,7 @@ control_flea:
     bne			$t3, $zero, end_gen_flea       	    # if $t3 != $zero then end_gen_flea
 
     lw			$a0, fleaMaxAmountPerGen			# 
-    lw			$a1, fleaGenProb			            # 
+    lw			$a1, fleaGenProb			        # 
     jal			generate_flea				        # jump to generate_flea and save position to $ra
 
     end_gen_flea:
@@ -741,23 +741,26 @@ control_flea:
     bne			$t3, $zero, end_move_flea       	# if $t3 != $zero then end_move_flea
 
     # Clear old fleas
-    move 		$a0, $s0			    # $a0 = $s0
-    move 		$a1, $s1			    # $a1 = $s1
-    move 		$a2, $s3			    # $a2 = $s3
-    jal			draw_multiple_flea	    # jump to draw_multiple_flea and save position to $ra
+    move 		$a0, $s0			                # $a0 = $s0
+    move 		$a1, $s1			                # $a1 = $s1
+    move 		$a2, $s3			                # $a2 = $s3
+    jal			draw_multiple_flea	                # jump to draw_multiple_flea and save position to $ra
 	
-    # TODO Leave mushrooms with defined probability
+    # Leave mushrooms with defined probability
+    move 		$a0, $s0			                # $a0 = $s0
+    move 		$a1, $s1			                # $a1 = $s1
+    jal			leave_mushrooms_with_fleas			        # jump to leave_mushrooms_with_flea and save position to $ra
     
     # Calculate next position
-    move 		$a0, $s0			    # $a0 = $s0
-    move 		$a1, $s1			    # $a1 = $s1
-    jal			move_multiple_flea	    # jump to move_multiple_flea and save position to $ra
+    move 		$a0, $s0			                # $a0 = $s0
+    move 		$a1, $s1			                # $a1 = $s1
+    jal			move_multiple_flea	                # jump to move_multiple_flea and save position to $ra
     
     # Draw new flea
-    move 		$a0, $s0			    # $a0 = $s0
-    move 		$a1, $s1			    # $a1 = $s1
-    move 		$a2, $s2			    # $a2 = $s2
-    jal			draw_multiple_flea	    # jump to draw_multiple_flea and save position to $ra
+    move 		$a0, $s0			                # $a0 = $s0
+    move 		$a1, $s1			                # $a1 = $s1
+    move 		$a2, $s2			                # $a2 = $s2
+    jal			draw_multiple_flea	                # jump to draw_multiple_flea and save position to $ra
 
     end_move_flea:
     # --- END Move flea and leave mushroom
@@ -767,10 +770,10 @@ control_flea:
     lw			$s2, 8($sp)
     lw			$s3, 4($sp)
     lw			$ra, 0($sp)
-    addi		$sp, $sp, 20			# $sp += 20
+    addi		$sp, $sp, 20			            # $sp += 20
 
-    move 		$v0, $zero			# $v0 = $zero
-    jr			$ra					# jump to $ra
+    move 		$v0, $zero			                # $v0 = $zero
+    jr			$ra					                # jump to $ra
 
 # END FUN control_flea
 
@@ -1084,13 +1087,13 @@ generate_flea:
 
 # END FUN generate_flea
 
-# FUN fill_mushrooms_with_prob
-# - See fill_mushroom_with_prob (no 's' after the "mushroom" word)
+# FUN leave_mushrooms_with_fleas
+# - Logic to allow fleas leave mushrooms with appropriate probability defined 
+# - in .data
 # ARGS:
-# $a0: address of locations (object grid)
-# $a1: length of locations
-# $a2: probability to add mushroom per location provided
-fill_mushrooms_with_prob:
+# $a0: address of flea locations (object grid)
+# $a1: length of flea locations
+leave_mushrooms_with_fleas:
     addi		$sp, $sp, -20			# $sp -= 20
     sw			$s0, 16($sp)
     sw			$s1, 12($sp)
@@ -1099,20 +1102,41 @@ fill_mushrooms_with_prob:
     sw			$ra, 0($sp)
 
     # Load parameters
-    move 		$s0, $a0			    # $s0 = address of locations (object grid)
-    move 		$s1, $a1			    # $s1 = length of locations
-    move 		$s2, $a2			    # $s2 = probability per location
+    move 		$s0, $a0			    # $s0 = address of flea locations (object grid)
+    move 		$s1, $a1			    # $s1 = length of flea locations
     
     li			$s3, 0				    # $s3 = 0, the loop counter
-    fmwp_loop:
+    lmwf_loop:
         lw			$a0, 0($s0)			        # load current location
-        move 		$a1, $s2			        # $a1 = probability per location
+
+        # Do not add mushroom if we are outside of the mushroom area
+        lw			$t0, mushroomLength			# 
+        bge			$a0, $t0, lmwf_loop_continue# if $a0 >= $t0 then lmwf_loop_continue
+        
+
+        # --- Determine probability
+        lw			$t0, fleaMushroomProbSplitLocation
+        bge			$a0, $t0, lmwf_lower	    # if $a0 >= $t0 then lmwf_lower
+        
+        lmwf_upper:
+        lw			$a1, fleaMushroomProbUpper	# $a1 = fleaMushroomProbUpper
+        j			lmwf_split_end				# jump to lmwf_split_end
+        
+        lmwf_lower:
+        lw			$a1, fleaMushroomProbLower	# $a1 = fleaMushroomProbLower
+        j			lmwf_split_end				# jump to lmwf_split_end
+
+        lmwf_split_end:
+
+        # --- END Determine probability
+
         jal			fill_mushroom_with_prob     # Note that this is a different function
 
         # Increment loop counter
+        lmwf_loop_continue:
         addi		$s0, $s0, 4			        # $s0 = $s0 + 4
         addi		$s3, $s3, 1			        # $s3 = $s3 + 1
-        blt			$s3, $s1, fmwp_loop	        # if $s3 < $s1 then fmwp_loop
+        blt			$s3, $s1, lmwf_loop	        # if $s3 < $s1 then lmwf_loop
 
     lw			$s0, 16($sp)
     lw			$s1, 12($sp)
@@ -1124,7 +1148,7 @@ fill_mushrooms_with_prob:
     move 		$v0, $zero			    # $v0 = $zero
     jr			$ra					    # jump to $ra
 
-# END FUN fill_mushrooms_with_prob
+# END FUN leave_mushrooms_with_fleas
 
 # FUN fill_mushroom_with_prob
 # - Add a mushroom at location $a0 with probability $a1.
@@ -1160,7 +1184,7 @@ fill_mushroom_with_prob:
     li			$t1, 4				                # $t1 = 4
     mult	    $s0, $t1			                # $s0 * $t1 = Hi and Lo registers
     mflo	    $t2					                # copy Lo to $t2
-    sw			$t0, mushroom($t2)			        # save full-health mushroom
+    sw			$t0, mushrooms($t2)			        # save full-health mushroom
 
     end_fmwp:
     lw			$s0, 16($sp)
