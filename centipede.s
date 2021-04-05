@@ -201,6 +201,7 @@ enforce_game_rules:
     jal			detect_mushroom_dart_collision	        # jump to detect_mushroom_dart_collision and save position to $ra
     jal			detect_centipede_blaster_collision      # jump to detect_centipede_blaster_collision and save position to $ra
     jal			detect_flea_blaster_collision			# jump to detect_flea_blaster_collision and save position to $ra
+    jal			detect_flea_dart_collision				# jump to detect_flea_dart_collision and save position to $ra
 
     # Other game rules
     jal			detect_centipede_clear_off				# jump to detect_centipede_clear_off and save position to $ra
@@ -529,14 +530,23 @@ detect_flea_dart_collision:
     mflo	    $s3					    # copy Lo to $s3
 
     dfdc_darts_loop:
-        lw			$t0, 0($s1)			            # current dart location
-        
+        lw			$t0, 0($s1)			                # current dart location (display grid)
+        beq			$t0, -1, dfdc_darts_loop_continue	# skip empty dart
+
         # The reason to have an accessor here is because $s2 can be later used
         # to access fleaCurrentLives array in this function.
         li			$s2, 0				            # $s2 = 0, the flea array accessor
-        dfdc_flea_loop:
-            lw			$t1, fleas($s2)			            # current flea location
-            
+        dfdc_fleas_loop:
+            # Get dart location in object grid
+            lw			$t0, 0($s1)			                # current dart location (display grid)
+            move 		$a0, $t0			                # $a0 = $t0
+            jal			display_to_object_grid_location		# jump to display_to_object_grid_location and save position to $ra
+            move 		$t0, $v0			                # $t0 = $v0
+
+            lw			$t1, fleas($s2)			            # current flea location (object grid)
+
+            beq			$t1, -1, dfdc_fleas_loop_continue	# skip empty flea
+
             beq			$t0, $t1, dfdc_respond_collision	# if $t0 == $t1 then dfdc_respond_collision
             j			dfdc_respond_collision_end			# jump to dfdc_respond_collision_end
     
@@ -544,10 +554,12 @@ detect_flea_dart_collision:
             lw			$t2, fleaCurrentLives($s2)			# current lives of flea
             subi		$t2, $t2, 1			                # decrement live
             sw			$t2, fleaCurrentLives($s2)			# save new health
-            
+            li			$t3, -1				                # $t3 = -1
+            sw			$t3, 0($s1)			                # remove dart
+
             bne			$t2, 0, dfdc_respond_collision_end	# if $t2 != 0 then dfdc_respond_collision_end
             
-            # If current live is 0, remove flea as well
+            # If current live is 0, remove flea
             li			$t2, -1				                # $t2 = -1
             sw			$t2, fleas($s2)			            # Clear flea from the fleas array
             
@@ -558,10 +570,12 @@ detect_flea_dart_collision:
             dfdc_respond_collision_end:
 
             # Loop counter
+            dfdc_fleas_loop_continue:
             addi		$s2, $s2, 4			        # $s2 = $s2 + 4
-            blt			$s2, $s3, dfdc_flea_loop	# if $s2 < $s3 then dfdc_flea_loop
+            blt			$s2, $s3, dfdc_fleas_loop	# if $s2 < $s3 then dfdc_fleas_loop
 
         # Loop counter
+        dfdc_darts_loop_continue:
         lw			$t0, dartLength			        # 
         addi		$s0, $s0, 1			            # $s0 = $s0 + 1
         addi		$s1, $s1, 4			            # $s1 = $s1 + 4
