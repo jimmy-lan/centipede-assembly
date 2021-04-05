@@ -1087,6 +1087,10 @@ move_flea:
     # Load parameters
     move 		$s0, $a0			                # $s0 = current flea location (object grid)
 
+    # Skip empty flea
+    beq			$s0, -1, move_flea_end	# if $s0 == -1 then move_flea_end
+    
+
     # Move the flea one row downward
     lw			$t0, screenPixelUnits		        # $t0 = screenPixelUnits
     addi		$v0, $s0, $t0			            # $v0 = $s0 + $t0
@@ -1449,10 +1453,15 @@ draw_multiple_flea:
     li			$s3, 0				        # $s3 = 0, the loop counter
     draw_multiple_flea_loop:
         lw			$a0, 0($s0)			                # $a0 = location of the current flea
+
+        # Skip empty flea
+        beq			$a0, -1, draw_multiple_flea_skip	# if $a0 == -1 then draw_multiple_flea_skip
+        
         move 		$a1, $s2			                # $a1 = $s2
         jal			draw_flea				# jump to draw_flea and save position to $ra
         
         # Increment loop counter
+        draw_multiple_flea_skip:
         addi		$s0, $s0, 4			                # $s0 = $s0 + 4
         addi		$s3, $s3, 1			                # $s3 = $s3 + 1
         blt			$s3, $s1, draw_multiple_flea_loop	# if $s3 < $s1 then draw_multiple_flea_loop
