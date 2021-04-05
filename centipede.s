@@ -995,8 +995,73 @@ generate_flea:
     sw			$s3, 4($sp)
     sw			$ra, 0($sp)
 
-    
+    # Move parameters
+    move 		$s0, $a0			# $s0 = maximum amount to generate
+    move 		$s1, $a1			# $s1 = probability of generation (0 - 100)
 
+    # --- Do not generate if probability is not met
+    # Generate random number from 0 to 99
+    li			$v0, 42				                # use service 42 to generate random numbers
+    li			$a0, 0				                # $a0 = 0
+    move		$a1, 100				            # $a1 = 100
+    syscall
+    move 		$t0, $a0			                # $t0 = result
+    # If do not meet generation probability, terminate
+    bge			$t0, $s1, end_generate_flea	# if $t0 >= $s1 then end_generate_flea
+    # --- END Do not generate if probability is not met
+    
+    # --- Determine how many fleas to generate
+    # Generate random number from 0 to ($s0 - 1)
+    li			$v0, 42				                # use service 42 to generate random numbers
+    li			$a0, 0				                # $a0 = 0
+    move		$a1, $s0				            # $a1 = $s0
+    syscall
+    move 		$t0, $a0			                # $t0 = result
+
+    addi		$s3, $t0, 1			                # $s3 = random number from 1 to $s0
+    # --- END Determine how many fleas to generate
+
+    lw			$s2, fleaLength			            # $s2 = fleaLength
+    li			$t5, fleas				            # $t5 = fleas
+    li			$t6, 0				                # $t6 = 0, the loop counter
+    generate_flea_loop:
+        lw			$t0, 0($t5)			                # current flea element
+        bne			$t0, -1, generate_flea_skip	        # if $t0 != -1 then generate_flea_skip
+        
+        # Generate flea and save to 0($t5)
+        # Note: the current implementation might result in more than one flea being generating at the same index. In this case, they will be treated as one single flea by the game, since both fleas will move together.
+        lw			$t1, screenPixelUnits			    # 
+
+        # --- Generate random number from 0 to (screenPixelUnits - 1)
+        li			$v0, 42				                # use service 42 to generate random numbers
+        li			$a0, 0				                # $a0 = 0
+        move		$a1, $t1				            # $a1 = $s0
+        
+        # Perserve $t5
+        addi		$sp, $sp, -4			# $sp = $sp + -4
+        sw			$t5, 0($sp)			    # 
+        
+        syscall
+
+        # Get $t5 back
+        lw			$t5, 0($sp)			# 
+        addi		$sp, $sp, 4			# $sp = $sp + 4
+        
+        move 		$t0, $a0			                # $t0 = resulting rnd num
+        # --- END Generate random number from 0 to (screenPixelUnits - 1)
+
+        # Save back location
+        sw			$t0, 0($t5)			                # 
+        
+        subi		$s3, $s3, 1			                # $s3 = $s3 - 1
+        beq			$s3, 0, end_generate_flea	        # if $s3 == 0 then end_generate_flea
+
+        generate_flea_skip:
+        addi		$t5, $t5, 4			                # $t5 = $t5 + 4
+        addi		$t6, $t6, 1			                # $t6 = $t6 + 1
+        blt			$t6, $s2, generate_flea_loop	    # if $t6 < $s2 then generate_flea_loop
+
+    end_generate_flea:
     lw			$s0, 16($sp)
     lw			$s1, 12($sp)
     lw			$s2, 8($sp)
