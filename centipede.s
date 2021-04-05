@@ -74,10 +74,13 @@
     # Flea
     fleas: .word -1:5
     fleaLength: .word 5
-    fleaFramesPerMove: .word 3
-    fleaFramesPerGen: .word 20            # Number of frames to generate flea
-    fleaProb: .word 20                   # Probability to generate flea per generation cycle
+    fleaFramesPerMove: .word 2
+    fleaFramesPerGen: .word 30            # Number of frames to generate flea
+    fleaGenProb: .word 20                 # Probability to generate flea per generation cycle
     fleaMaxAmountPerGen: .word 3         # Maximum number of fleas to generate simutaneously
+    fleaMushroomProbUpper: .word 10     # Probability of fleas leaving mushroom on the upper half of screen
+    fleaMushroomProbLower: .word 30      # Probability of fleas leaving mushroom on the lower half of screen
+    fleaMushroomProbSplitLocation: .word 210        # Location at which the flea changes probability of generating mushroom
     # --- END Objects
 
     # Personal Space for Bug Blaster
@@ -724,7 +727,7 @@ control_flea:
     bne			$t3, $zero, end_gen_flea       	    # if $t3 != $zero then end_gen_flea
 
     lw			$a0, fleaMaxAmountPerGen			# 
-    lw			$a1, fleaProb			            # 
+    lw			$a1, fleaGenProb			            # 
     jal			generate_flea				        # jump to generate_flea and save position to $ra
 
     end_gen_flea:
@@ -1201,7 +1204,6 @@ move_flea:
     # Skip empty flea
     li			$v0, -1				                # default empty location
     beq			$s0, -1, move_flea_end	            # if $s0 == -1 then move_flea_end
-    
 
     # Move the flea one row downward
     lw			$t0, screenPixelUnits		        # $t0 = screenPixelUnits
@@ -1210,7 +1212,7 @@ move_flea:
     # Check if flea exits the screen
     mult	    $t0, $t0			                # $t0 * $t0 = Hi and Lo registers
     mflo	    $t1					                # copy Lo to $t1
-    blt			$v0, $t0, move_flea_end         	# if $v0 < $t0 then move_flea_end
+    blt			$v0, $t1, move_flea_end         	# if $v0 < $t1 then move_flea_end
     
     # Flea is outside of the screen
     li			$v0, -1				                # $v0 = -1, remove this flea
