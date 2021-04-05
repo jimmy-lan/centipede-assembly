@@ -79,7 +79,7 @@
     fleaGenProb: .word 20                 # Probability to generate flea per generation cycle
     fleaMaxAmountPerGen: .word 3         # Maximum number of fleas to generate simutaneously
     fleaMushroomProbUpper: .word 5     # Probability of fleas leaving mushroom on the upper half of screen
-    fleaMushroomProbLower: .word 15      # Probability of fleas leaving mushroom on the lower half of screen
+    fleaMushroomProbLower: .word 30      # Probability of fleas leaving mushroom on the lower half of screen
     fleaMushroomProbSplitLocation: .word 210        # Location at which the flea changes probability of generating mushroom
     # --- END Objects
 
@@ -792,9 +792,12 @@ control_flea:
     jal			draw_multiple_flea	                # jump to draw_multiple_flea and save position to $ra
 	
     # Leave mushrooms with defined probability
+    control_flea_leave_mushrooms:
     move 		$a0, $s0			                # $a0 = $s0
     move 		$a1, $s1			                # $a1 = $s1
-    jal			leave_mushrooms_with_fleas			        # jump to leave_mushrooms_with_flea and save position to $ra
+    jal			leave_mushrooms_with_fleas			# jump to leave_mushrooms_with_flea and save position to $ra
+
+    control_flea_leave_mushrooms_end:
     
     # Calculate next position
     move 		$a0, $s0			                # $a0 = $s0
@@ -2284,6 +2287,58 @@ sleep:
     jr			$ra					    # jump to $ra
 
 # END FUN sleep
+
+# FUN count_mushrooms
+# ARGS:
+# $a0: address of the mushrooms array
+# $a1: location to start counting (inclusive)
+# $a2: location to end counting (exclusive)
+# RETURN $v0: number of mushrooms present in the interval
+count_mushrooms:
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    # Load parameters
+    move 		$s0, $a0			# $s0 = address of the mushrooms array
+    move 		$s1, $a1			# $s1 = location to start counting (inclusive)
+    move 		$s2, $a2			# $s2 = location to end counting (exclusive)
+
+    # Advance to the start element
+    li			$t0, 4				# $t0 = 4
+    mult	    $s1, $t0			# $s1 * $t0 = Hi and Lo registers
+    mflo	    $t1					# copy Lo to $t1
+    addi		$s0, $s0, $t1		# $s0 = $s0 + $t1
+
+    # Mushroom counter
+    li			$s3, 0				# $s3 = 0
+
+    count_mushrooms_loop:
+        lw			$t0, 0($s0)			# 
+        beq			$t0, 0, count_mushrooms_loop_continue	# if $t0 == 0 then count_mushrooms_loop_continue
+        
+        addi		$s3, $s3, 1			# $s3 = $s3 + 1
+
+        # Increment loop counter
+        count_mushrooms_loop_continue:
+        addi		$s0, $s0, 4			                    # $s0 = $s0 + 4
+        addi		$s1, $s1, 1			                    # $s1 = $s1 + 1
+        blt			$s1, $s2, count_mushrooms_loop	        # if $s1 < $s2 then count_mushrooms_loop
+
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+
+    move 		$v0, $s3			    # $v0 = $zero
+    jr			$ra					    # jump to $ra
+
+# END FUN count_mushrooms
 
 # FUN object_to_display_grid_location
 # ARGS:
