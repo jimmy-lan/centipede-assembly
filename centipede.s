@@ -733,7 +733,7 @@ control_flea:
     end_gen_flea:
     # --- END Generate flea
 
-    # --- Move flea
+    # --- Move flea and leave mushroom
     # Check if flea should move
     lw			$t0, fleaFramesPerMove     		    # $t0 = fleaFramesPerMove
     div			$a0, $t0			                # $a0 / $t0
@@ -745,6 +745,8 @@ control_flea:
     move 		$a1, $s1			    # $a1 = $s1
     move 		$a2, $s3			    # $a2 = $s3
     jal			draw_multiple_flea	    # jump to draw_multiple_flea and save position to $ra
+	
+    # TODO Leave mushrooms with defined probability
     
     # Calculate next position
     move 		$a0, $s0			    # $a0 = $s0
@@ -758,7 +760,7 @@ control_flea:
     jal			draw_multiple_flea	    # jump to draw_multiple_flea and save position to $ra
 
     end_move_flea:
-    # --- END Move flea
+    # --- END Move flea and leave mushroom
 
     lw			$s0, 16($sp)
     lw			$s1, 12($sp)
@@ -1082,14 +1084,56 @@ generate_flea:
 
 # END FUN generate_flea
 
-# FUN generate_mushroom_with_probability
+# FUN fill_mushrooms_with_prob
+# - See fill_mushroom_with_prob (no 's' after the "mushroom" word)
+# ARGS:
+# $a0: address of locations (object grid)
+# $a1: length of locations
+# $a2: probability to add mushroom per location provided
+fill_mushrooms_with_prob:
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    # Load parameters
+    move 		$s0, $a0			    # $s0 = address of locations (object grid)
+    move 		$s1, $a1			    # $s1 = length of locations
+    move 		$s2, $a2			    # $s2 = probability per location
+    
+    li			$s3, 0				    # $s3 = 0, the loop counter
+    fmwp_loop:
+        lw			$a0, 0($s0)			        # load current location
+        move 		$a1, $s2			        # $a1 = probability per location
+        jal			fill_mushroom_with_prob     # Note that this is a different function
+
+        # Increment loop counter
+        addi		$s0, $s0, 4			        # $s0 = $s0 + 4
+        addi		$s3, $s3, 1			        # $s3 = $s3 + 1
+        blt			$s3, $s1, fmwp_loop	        # if $s3 < $s1 then fmwp_loop
+
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+
+    move 		$v0, $zero			    # $v0 = $zero
+    jr			$ra					    # jump to $ra
+
+# END FUN fill_mushrooms_with_prob
+
+# FUN fill_mushroom_with_prob
 # - Add a mushroom at location $a0 with probability $a1.
 # - If a mushroom already exitst at location, the health of the mushroom
 # - will be boosted to maximum.
 # ARGS:
 # $a0: location (object grid)
 # $a1: probability to generate mushroom
-generate_mushroom_with_probability:
+fill_mushroom_with_prob:
     addi		$sp, $sp, -20			# $sp -= 20
     sw			$s0, 16($sp)
     sw			$s1, 12($sp)
@@ -1108,7 +1152,7 @@ generate_mushroom_with_probability:
     syscall
     move 		$t0, $a0			                # $t0 = result
     # If do not meet generation probability, terminate
-    bge			$t0, $s1, end_gmwp	                # if $t0 >= $s1 then end_gmwp
+    bge			$t0, $s1, end_fmwp	                # if $t0 >= $s1 then end_fmwp
     # --- END Do not generate if probability is not met
 
     # Add mushroom
@@ -1118,7 +1162,7 @@ generate_mushroom_with_probability:
     mflo	    $t2					                # copy Lo to $t2
     sw			$t0, mushroom($t2)			        # save full-health mushroom
 
-    end_gmwp:
+    end_fmwp:
     lw			$s0, 16($sp)
     lw			$s1, 12($sp)
     lw			$s2, 8($sp)
@@ -1129,7 +1173,7 @@ generate_mushroom_with_probability:
     move 		$v0, $zero			# $v0 = $zero
     jr			$ra					# jump to $ra
 
-# END FUN generate_mushroom_with_probability
+# END FUN fill_mushroom_with_prob
 
 # FUN generate_mushrooms
 # Generate and populate the "mushrooms" array based on "mushroomLength"
