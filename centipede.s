@@ -354,18 +354,123 @@ init_current_level:
     j			init_level_end				    # jump to init_level_end
     
     init_level_2:
+    # --- Load colors
+    lw			$t0, backgroundColor2
+    sw			$t0, backgroundColor
+    lw			$t0, centipedeColor2
+    sw			$t0, centipedeColor
+    lw			$t0, mushroomFullLivesColor2
+    sw			$t0, mushroomFullLivesColor
+    lw			$t0, mushroomColor2
+    sw			$t0, mushroomColor
+    lw			$t0, fleaColor2
+    sw			$t0, fleaColor
+    lw			$t0, fleaLeaveMushroomColor2
+    sw			$t0, fleaLeaveMushroomColor
+    # --- END Load colors
+
+    # --- Load objects
+    # Centipede
+    la			$a0, centipedeLocations2
+    la			$a2, centipedeLocations
+    lw			$a2, centipedeLength2
+    jal			copy_array				# jump to copy_array and save position to $ra
+    
+    la			$a0, centipedeDirections2
+    la			$a2, centipedeDirections
+    lw			$a2, centipedeLength2
+    jal			copy_array				# jump to copy_array and save position to $ra
+    
+    lw			$t0, centipedeLength2
+    sw			$t0, centipedeLength
+    lw			$t0, centipedeFramesPerMove2
+    sw			$t0, centipedeFramesPerMove
+
+    # Mushrooms
+    lw			$t0, mushroomLength2
+    sw			$t0, mushroomLength
+    lw			$t0, mushroomInitQuantity2
+    sw			$t0, mushroomInitQuantity
+
+    # Fleas
+    lw			$t0, fleaLength2
+    sw			$t0, fleaLength
+    lw			$t0, fleaMaxLives2
+    sw			$t0, fleaMaxLives
+    lw			$t0, fleaMaxAmountPerGen2
+    sw			$t0, fleaMaxAmountPerGen
+    lw			$t0, fleaMushroomProbUpper2
+    sw			$t0, fleaMushroomProbUpper
+    lw			$t0, fleaMushroomProbLower2
+    sw			$t0, fleaMushroomProbLower
+    lw			$t0, fleaLeaveMushroomThreshold2
+    sw			$t0, fleaLeaveMushroomThreshold
+    # --- END Load objects
     
     j			init_level_end				    # jump to init_level_end
 
     init_level_3:
+    # --- Load colors
+    lw			$t0, backgroundColor3
+    sw			$t0, backgroundColor
+    lw			$t0, centipedeColor3
+    sw			$t0, centipedeColor
+    lw			$t0, mushroomFullLivesColor3
+    sw			$t0, mushroomFullLivesColor
+    lw			$t0, mushroomColor3
+    sw			$t0, mushroomColor
+    lw			$t0, fleaColor3
+    sw			$t0, fleaColor
+    lw			$t0, fleaLeaveMushroomColor3
+    sw			$t0, fleaLeaveMushroomColor
+    # --- END Load colors
+
+    # --- Load objects
+    # Centipede
+    la			$a0, centipedeLocations3
+    la			$a3, centipedeLocations
+    lw			$a2, centipedeLength3
+    jal			copy_array				# jump to copy_array and save position to $ra
     
+    la			$a0, centipedeDirections3
+    la			$a3, centipedeDirections
+    lw			$a2, centipedeLength3
+    jal			copy_array				# jump to copy_array and save position to $ra
+    
+    lw			$t0, centipedeLength3
+    sw			$t0, centipedeLength
+    lw			$t0, centipedeFramesPerMove3
+    sw			$t0, centipedeFramesPerMove
+
+    # Mushrooms
+    lw			$t0, mushroomLength3
+    sw			$t0, mushroomLength
+    lw			$t0, mushroomInitQuantity3
+    sw			$t0, mushroomInitQuantity
+
+    # Fleas
+    lw			$t0, fleaLength3
+    sw			$t0, fleaLength
+    lw			$t0, fleaMaxLives3
+    sw			$t0, fleaMaxLives
+    lw			$t0, fleaMaxAmountPerGen3
+    sw			$t0, fleaMaxAmountPerGen
+    lw			$t0, fleaMushroomProbUpper3
+    sw			$t0, fleaMushroomProbUpper
+    lw			$t0, fleaMushroomProbLower3
+    sw			$t0, fleaMushroomProbLower
+    lw			$t0, fleaLeaveMushroomThreshold3
+    sw			$t0, fleaLeaveMushroomThreshold
+    # --- END Load objects
+
     j			init_level_end				    # jump to init_level_end
 
     init_level_end:
     # Reset the fleas array
     la			$a0, fleas			            # 
     lw			$a1, fleaLength		            # 
-    jal			remove_fleas				    # jump to remove_fleas and save position to $ra
+    li			$a2, -1				            # $a2 = -1
+    jal			reset_object_array				# jump to reset_object_array and save position to $ra
     
     # Initialize mushrooms
     lw			$a0, mushroomInitQuantity		# Number of mushrooms to generate
@@ -408,6 +513,12 @@ await_restart:
     sw			$s2, 8($sp)
     sw			$s3, 4($sp)
     sw			$ra, 0($sp)
+
+    # Remove all mushrooms
+    la			$a0, mushrooms				                # $a0 = address of mushrooms
+    lw			$a1, mushroomLength			                # $a1 = mushroomLength
+    li			$a2, 0				                        # $a2 = 0
+    jal			reset_object_array				            # jump to reset_object_array and save position to $ra
 
     await_restart_loop:
         # Load keypress indicator
@@ -2076,44 +2187,6 @@ remove_mushrooms:
 
 # END FUN remove_mushrooms
 
-# FUN remove_fleas
-# ARGS:
-# $a0: address of the flea array
-# $a1: length of the flea array
-remove_fleas:
-    addi		$sp, $sp, -20			            # $sp -= 20
-    sw			$s0, 16($sp)
-    sw			$s1, 12($sp)
-    sw			$s2, 8($sp)
-    sw			$s3, 4($sp)
-    sw			$ra, 0($sp)
-
-    # Load parameters
-    move 		$s0, $a0			                # $s0 = address of the flea array
-    move 		$s1, $a1			                # $s1 = length of the flea array
-
-    li			$s3, 0				                # $s3 = 0, the loop counter
-    remove_fleas_loop:
-        li			$t0, -1				            # $t0 = -1
-        sw			$t0, 0($s0)			            # 
-
-        # Increment loop counter
-        addi		$s0, $s0, 4			            # $s0 = $s0 + 4
-        addi		$s3, $s3, 1			            # $s3 = $s3 + 1
-        blt			$s3, $s1, remove_fleas_loop	    # if $s3 < $s1 then remove_fleas_loop
-
-    lw			$s0, 16($sp)
-    lw			$s1, 12($sp)
-    lw			$s2, 8($sp)
-    lw			$s3, 4($sp)
-    lw			$ra, 0($sp)
-    addi		$sp, $sp, 20			            # $sp += 20
-
-    move 		$v0, $zero			                # $v0 = $zero
-    jr			$ra					                # jump to $ra
-
-# END FUN remove_fleas
-
 ##############################################
 # # Graphics
 ##############################################
@@ -2848,6 +2921,47 @@ copy_array:
     jr			$ra					# jump to $ra
 
 # END FUN copy_array
+
+# FUN reset_object_array
+# - Set all elements in the object array to $a2.
+# ARGS:
+# $a0: address of the object array
+# $a1: length of the object array
+# $a2: value to set
+reset_object_array:
+    addi		$sp, $sp, -20			            # $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    # Load parameters
+    move 		$s0, $a0			                # $s0 = address of the flea array
+    move 		$s1, $a1			                # $s1 = length of the flea array
+    move 		$s2, $a2			                # $s2 = value to set
+
+    li			$s3, 0				                # $s3 = 0, the loop counter
+    reset_object_array_loop:
+        move        $t0, $a2				        # $t0 = $a2
+        sw			$t0, 0($s0)			            # 
+
+        # Increment loop counter
+        addi		$s0, $s0, 4			            # $s0 = $s0 + 4
+        addi		$s3, $s3, 1			            # $s3 = $s3 + 1
+        blt			$s3, $s1, reset_object_array_loop	    # if $s3 < $s1 then reset_object_array_loop
+
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			            # $sp += 20
+
+    move 		$v0, $zero			                # $v0 = $zero
+    jr			$ra					                # jump to $ra
+
+# END FUN reset_object_array
 
 # FUN object_to_display_grid_location
 # ARGS:
