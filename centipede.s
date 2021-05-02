@@ -117,9 +117,9 @@
     centipedeLength2: .word 15
     centipedeFramesPerMove2: .word 4
 
-    centipedeLocations3: .word 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62
-    centipedeDirections3: .word 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
-    centipedeLength3: .word 25
+    centipedeLocations3: .word 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 -1, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, -1
+    centipedeDirections3: .word 1:24
+    centipedeLength3: .word 24
     centipedeFramesPerMove3: .word 3
     # --- END Centipede levels
 

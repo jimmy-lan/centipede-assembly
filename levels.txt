@@ -1,0 +1,38 @@
+Level 1:
+- Centipede has length 10
+- Centipede moves once every 6 frames
+- Two rows in personal space are mushroom-free
+- Initial mushrooms: 15
+- Maximum fleas on the screen: 5
+- Shoot once to eliminate flea
+- Fleas move once every 3 frames
+- Maximum of 3 fleas falling at the same time
+- Probability of fleas leaving mushroom on the upper half of game area: 4%
+- Probability of fleas leaving mushroom on the lower half of game area: 25%
+- Maximum mushrooms in the lower half of game area: 35
+
+Level 2:
+- Centipede has length 15
+- Centipede moves once every 4 frames
+- One row in personal space are mushroom-free
+- Additional mushrooms: 5
+- Maximum fleas on the screen: 10
+- Shoot twice to eliminate flea
+- Fleas move once every 2 frames
+- Maximum of 5 fleas falling at the same time
+- Probability of fleas leaving mushroom on the upper half of game area: 5%
+- Probability of fleas leaving mushroom on the lower half of game area: 35%
+- Maximum mushrooms in the lower half of game area: 40
+
+Level 3:
+- Mount two centipedes, one of length 12 and the other of length 10
+- Centipede moves once every 3 frames
+- One row in personal space are mushroom-free
+- Additional mushrooms: 10
+- Maximum fleas on the screen: 10
+- Shoot twice to eliminate flea
+- Fleas move once every 1 frame
+- Maximum of 10 fleas falling at the same time
+- Probability of fleas leaving mushroom on the upper half of game area: 8%
+- Probability of fleas leaving mushroom on the lower half of game area: 50%
+- Maximum mushrooms in the lower half of game area: 50
